@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+  <head> </head>
+  <body style="margin:0px;overflow:hidden;">
+    <canvas
+      id="canvas"
+      width="800"
+      height="600"
+      style="background:#000000;vertical-align:top;"
+    ></canvas>
+
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/FirstPersonControls.js"></script>
+
+    <script type="text/javascript">
+      "use strict";
+
+      var scene, camera, renderer, controls;
+      var canvas = document.getElementById("canvas");
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      var meshes = [];
+      var clock = new THREE.Clock();
+      var timer = 0;
+
+      camera = new THREE.PerspectiveCamera(60, width / height, 1, 10000);
+      camera.position.set(-300, 150, 200);
+
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true,
+        transparent: true,
+        premultipliedAlpha: false
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setClearColor(0x000000);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = 0;
+      renderer.gammaInput = true;
+      renderer.gammaOutput = true;
+
+      controls = new THREE.FirstPersonControls(camera, renderer.domElement);
+      controls.movementSpeed = 200;
+      controls.lookSpeed = 0.1;
+      controls.lookVertical = true;
+
+      scene = new THREE.Scene();
+
+      // ________________________ УКАЗАТЕЛЬ НАПРАВЛЕНИЯ ОСЕЙ ________________________
+
+      scene.add(new THREE.AxesHelper(100));
+
+      // ________________________ СВЕТ ОКРУЖЕНИЯ ________________________
+
+      var ambient = new THREE.AmbientLight(0xffffff, 0.2);
+      scene.add(ambient);
+
+      // ________________________СВЕТ СОЛНЦА ________________________
+
+      var sun = new THREE.DirectionalLight(0xffffff, 1.2);
+      sun.position.set(350, 400, 350);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 4096;
+      sun.shadow.mapSize.height = 4096;
+      sun.shadow.camera.near = 10;
+      sun.shadow.camera.far = 1700;
+      sun.shadow.camera.left = -2000;
+      sun.shadow.camera.right = 2000;
+      sun.shadow.camera.top = 1350;
+      sun.shadow.camera.bottom = -1350;
+      //sun.shadow.bias=-0.00005;
+      sun.shadow.radius = 1;
+      scene.add(sun);
+
+      //scene.add(new THREE.DirectionalLightHelper(sun,100));
+
+      //__________________ ЗАГРУЗЧИК ТЕКСТУР ______________
+
+      var manager_to_load = 0; // СКОЛЬКО НАДО ЗАГРУЗИТЬ ЧЕРЕЗ МЕНДЖЕР ЗАГРУЗОК. ПОДСЧИТЫВАЕТСЯ НИЖЕ
+      var manager_loaded = 0; // ЗАГРУЖЕНО В МЕНЕДЖЕРЕ
+
+      var loadingManager = new THREE.LoadingManager();
+      loadingManager.onProgress = function(item, loaded, total) {
+        console.log(item, loaded, total);
+        manager_loaded = loaded;
+        if (loaded == total) {
+          init_last();
+          console.log("ФАЙЛЫ В МЕНЕДЖЕРЕ ЗАГРУЖЕНЫ");
+        }
+      };
+
+      var tex = [];
+      var texture_loader = new THREE.TextureLoader(loadingManager);
+
+      tex["wood"] = texture_loader.load("images/wood.jpg");
+      tex["wood"].wrapS = tex["wood"].wrapT = THREE.RepeatWrapping;
+      tex["wood"].repeat.set(10, 10);
+
+      tex["wall"] = texture_loader.load("images/wall.jpg");
+      tex["wall"].wrapS = THREE.RepeatWrapping;
+      tex["wall"].repeat.x = 2;
+
+      tex["coin"] = texture_loader.load("images/coin.png");
+      tex["flame"] = texture_loader.load("images/flame.png");
+
+      for (var n in tex) {
+        manager_to_load++; // ПОДСЧИТЫВАЕМ КОЛИЧЕСТВО ТЕКСТУР ДЛЯ ЗАГРУЗКИ ЧЕРЕЗ МЕНДЖЕР
+      }
+
+      function init_last() {
+        tex["coin_2"] = tex["coin"].clone();
+        tex["coin_2"].needsUpdate = true;
+        meshes["sprite_3"].material.map = tex["coin_2"];
+        coin_2();
+        calc_tex_anim();
+        loop();
+      }
+
+      //__________________ НЕБО - ЯЩИК ______________
+
+      meshes["sky"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(1000, 1000, 1000),
+        new THREE.MeshLambertMaterial({
+          map: tex["wall"],
+          side: THREE.BackSide
+        })
+      );
+      meshes["sky"].receiveShadow = true;
+      meshes["sky"].position.set(0, 480, 0);
+      scene.add(meshes["sky"]);
+
+      //__________________ ПОЛ  ______________
+
+      meshes["ground"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(1000, 1000),
+        new THREE.MeshPhongMaterial({
+          map: tex["wood"]
+        })
+      );
+      meshes["ground"].receiveShadow = true;
+      meshes["ground"].position.y = -10;
+      meshes["ground"].geometry.applyMatrix(
+        new THREE.Matrix4().makeRotationX(-90 * (Math.PI / 180))
+      );
+      scene.add(meshes["ground"]);
+
+      //__________________ АНИМАЦИЯ ТЕКСТУРЫ ______________
+
+      //__________________ МОНЕТА  1 ______________
+
+      meshes["sprite_1"] = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: tex["coin"]
+        })
+      );
+      meshes["sprite_1"].scale.set(20, 20);
+      meshes["sprite_1"].position.set(50, 50, 0);
+      scene.add(meshes["sprite_1"]);
+
+      //__________________ МОНЕТА  2 ______________
+
+      meshes["sprite_2"] = meshes["sprite_1"].clone();
+      meshes["sprite_2"].position.set(70, 50, 0);
+      scene.add(meshes["sprite_2"]);
+
+      //__________________ МОНЕТА  3 ______________
+
+      meshes["sprite_3"] = new THREE.Sprite(new THREE.SpriteMaterial({}));
+      meshes["sprite_3"].scale.set(20, 20);
+      meshes["sprite_3"].position.set(90, 50, 0);
+      scene.add(meshes["sprite_3"]);
+
+      //__________________ ПЛАМЯ  ______________
+
+      meshes["flame"] = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: tex["flame"]
+        })
+      );
+      meshes["flame"].scale.set(25, 50);
+      meshes["flame"].position.set(130, 50, 0);
+      scene.add(meshes["flame"]);
+
+      //__________________ СВЕЧА  ______________
+
+      meshes["cyl"] = new THREE.Mesh(
+        new THREE.CylinderGeometry(8, 8, 60, 12, 1, false),
+        new THREE.MeshPhongMaterial({})
+      );
+      meshes["cyl"].castShadow = true;
+      meshes["cyl"].position.set(130, 20, 0);
+      scene.add(meshes["cyl"]);
+
+      meshes["cyl_2"] = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.5, 0.5, 5, 4, 1, false),
+        new THREE.MeshPhongMaterial({
+          color: 0x000000
+        })
+      );
+      meshes["cyl_2"].position.set(130, 50, 0);
+      scene.add(meshes["cyl_2"]);
+
+      // ДЛЯ ПЕРВОЙ ТЕКСТУРЫ МОНЕТЫ
+
+      tex["coin"].a = 0; // НОМЕР ПЕРВОГО КАДРА
+      tex["coin"].c = 10; // СКОЛЬКО ВСЕГО КАДРОВ
+      tex["coin"].s = 3; // СКОРОСТЬ СМЕНЫ КАДРОВ
+      tex["coin"].h = 4; // СКОЛЬКО КАДРОВ ПО ГОРИЗОНТАЛИ
+      tex["coin"].v = 3; // СКОЛЬКО КАДРОВ ПО ВЕРТИКАЛИ
+
+      // ДЛЯ ВТОРОЙ ТЕКСТУРЫ МОНЕТЫ
+
+      function coin_2() {
+        tex["coin_2"].a = 8; // НОМЕР ПЕРВОГО КАДРА
+        tex["coin_2"].c = 10; // СКОЛЬКО ВСЕГО КАДРОВ
+        tex["coin_2"].s = 3; // СКОРОСТЬ СМЕНЫ КАДРОВ
+        tex["coin_2"].h = 4; // СКОЛЬКО КАДРОВ ПО ГОРИЗОНТАЛИ
+        tex["coin_2"].v = 3; // СКОЛЬКО КАДРОВ ПО ВЕРТИКАЛИ
+      }
+
+      // ДЛЯ ТЕКСТУРЫ ОГНЯ
+
+      tex["flame"].a = 0; // НОМЕР ПЕРВОГО КАДРА
+      tex["flame"].c = 8; // СКОЛЬКО ВСЕГО КАДРОВ
+      tex["flame"].s = 4; // СКОРОСТЬ СМЕНЫ КАДРОВ
+      tex["flame"].h = 8; // СКОЛЬКО КАДРОВ ПО ГОРИЗОНТАЛИ
+      tex["flame"].v = 1; // СКОЛЬКО КАДРОВ ПО ВЕРТИКАЛИ
+
+      var tex_anim = ["coin", "coin_2", "flame"]; // СПИСОК АНИМИРУЕМЫХ ТЕКСТУР
+      var ta_name;
+
+      // ДЛЯ КАЖДОЙ ТЕКСТУРЫ ИЗ СПИСКА ДЕЛАЕМ РАСЧЁТЫ
+
+      function calc_tex_anim() {
+        for (var i in tex_anim) {
+          ta_name = tex[tex_anim[i]];
+          ta_name.f = 1 - 1 / ta_name.v; // СМЕЩЕНИЕ ПО ВЫСОТЕ ДЛЯ ПЕРВОГО КАДРА
+          ta_name.p = ta_name.c * ta_name.s - 1; // ПРЕДЕЛ КАДРОВ С УЧЁТОМ СКОРОСТИ
+          ta_name.repeat.set(1 / ta_name.h, 1 / ta_name.v); // ДЕЛАЕМ МАСШТАБ ДО РАЗМЕРА ОДНОГО КАДРА
+        }
+      }
+
+      // ________________________ РЕНДЕРИНГ  ________________________
+
+      function loop() {
+        requestAnimationFrame(loop);
+
+        var delta = clock.getDelta();
+
+        controls.update(delta);
+
+        timer = Date.now() * 0.00007;
+
+        //__________________ АНИМАЦИЯ ТЕКСТУРЫ СПРАЙТА  ______________
+
+        for (var i in tex_anim) {
+          ta_name = tex[tex_anim[i]];
+          ta_name.offset.x =
+            (Math.floor(ta_name.a / ta_name.s) % ta_name.h) / ta_name.h;
+          ta_name.offset.y =
+            ta_name.f -
+            Math.floor(Math.floor(ta_name.a / ta_name.s) / ta_name.h) /
+              ta_name.v;
+          ta_name.a++;
+          if (ta_name.a > ta_name.p) {
+            ta_name.a = 0;
+          }
+        }
+
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>
