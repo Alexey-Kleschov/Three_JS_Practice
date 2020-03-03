@@ -1,0 +1,236 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+</head>
+<body style="margin:0px;overflow:hidden;">
+
+
+<canvas id="canvas" width="800" height="600" style="background:#000000;vertical-align:top;"></canvas>
+
+
+<script type="text/javascript" src="js/three.js"></script>
+<script type="text/javascript" src="js/FirstPersonControls.js"></script>
+
+
+<script type="text/javascript">
+
+
+"use strict";
+
+
+var scene, camera, renderer, controls;
+var canvas=document.getElementById("canvas");
+var width=window.innerWidth;
+var height=window.innerHeight;
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+
+var meshes=[];
+var clock=new THREE.Clock();
+
+
+camera=new THREE.PerspectiveCamera(60,width/height,1,10000);
+camera.position.set(-300,150,200);
+
+
+renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true,transparent:true,premultipliedAlpha:false});
+renderer.setSize(width,height);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0x000000);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=0;
+renderer.gammaInput=true;
+renderer.gammaOutput=true;
+
+
+controls=new THREE.FirstPersonControls(camera,renderer.domElement);
+controls.movementSpeed=200;
+controls.lookSpeed=0.1;
+controls.lookVertical=true;
+
+
+scene=new THREE.Scene();
+
+
+// ________________________ УКАЗАТЕЛЬ НАПРАВЛЕНИЯ ОСЕЙ ________________________
+
+
+scene.add(new THREE.AxesHelper(100));
+
+
+// ________________________ СВЕТ ОКРУЖЕНИЯ ________________________
+
+
+var ambient=new THREE.AmbientLight(0xF5CF6B,0.2);
+scene.add(ambient);
+
+
+// ________________________ СВЕТ СОЛНЦА ________________________
+
+
+var sun=new THREE.DirectionalLight(0xFBECC4,1.2);
+sun.position.set(350,400,350);
+sun.castShadow=true;
+sun.shadow.mapSize.width=4096;
+sun.shadow.mapSize.height=4096;
+sun.shadow.camera.near=10;
+sun.shadow.camera.far=1700;
+sun.shadow.camera.left=-2000;
+sun.shadow.camera.right=2000;
+sun.shadow.camera.top=1350;
+sun.shadow.camera.bottom=-1350;
+//sun.shadow.bias=-0.00005;
+sun.shadow.radius=1;
+scene.add(sun);
+
+
+scene.add(new THREE.DirectionalLightHelper(sun,100));
+
+
+//__________________ НЕБО - ЯЩИК ______________
+
+
+meshes["sky"]=new THREE.Mesh(new THREE.BoxBufferGeometry(1000,1000,1000),
+new THREE.MeshLambertMaterial({
+color:0x004080,
+side:THREE.BackSide,
+}));
+meshes["sky"].receiveShadow=true;
+meshes["sky"].position.set(0,480,0);
+scene.add(meshes["sky"]);
+
+
+//__________________ ПОЛ ______________
+
+
+meshes["ground"]=new THREE.Mesh(new THREE.PlaneBufferGeometry(1000,1000),
+new THREE.MeshPhongMaterial({
+color:0xa0a0a0,
+}));
+meshes["ground"].receiveShadow=true;
+meshes["ground"].position.y=-10;
+meshes["ground"].geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-90*(Math.PI/180)));
+scene.add(meshes["ground"]);
+
+
+//__________________ МАССИВ ТОЧЕК ПУТИ ______________
+
+
+var path=[];
+//[x,y,z,скорость]
+path.push([0,0,0,1],[0,0,-100,1],[100,0,-100,1],[200,20,0,1]);
+var path_length=path.length;
+
+
+//__________________ РИСУЕМ ПУТЬ ______________
+
+
+var geometry=new THREE.Geometry();
+
+
+// ДОБАВЛЯЕМ ВЕРШИНЫ ПУСТОЙ ГЕОМЕТРИИ
+
+
+for(var i=0;i<path_length;i++){
+geometry.vertices.push(new THREE.Vector3(path[i][0],path[i][1],path[i][2]));
+}
+
+
+// ДОБАВЛЯЕМ НА СЦЕНУ ЛИНИИ
+
+
+meshes["path"]=new THREE.Line(geometry,new THREE.LineBasicMaterial({color:0xff0000}));
+scene.add(meshes["path"]);
+
+
+//__________________ ОБЪЕКТ ______________
+
+
+meshes["box"]=new THREE.Mesh(new THREE.BoxBufferGeometry(4,4,10),new THREE.MeshLambertMaterial({color:0xffc000}));
+meshes["box"].castShadow=true;
+meshes["box"].position.set(100,0,100);
+meshes["box"].vector={x:0,y:0,z:0}; //  НАПРАВЛЕНИЕ ВЕКТОРА ДЛЯ ДВИЖЕНИЯ К ТОЧКИ
+meshes["box"].now=0; // ТЕКУЩИЙ НОМЕР ТОЧКИ
+meshes["box"].change=1; //СРАЗУ ВКЛЮЧАЕМ РАСЧЕТ НААПРАЛЕНИЯ ДЛЯ ПЕРВОЙ ТОЧКИ
+scene.add(meshes["box"]);
+
+
+var box_dist=0; // ДИСТАНЦИЯ ДО ТЕКУЩЕЙ ТОЧКИ
+
+
+loop();
+
+
+// ________________________ РЕНДЕРИНГ  ________________________
+
+
+function loop(){
+
+
+requestAnimationFrame(loop);
+
+
+var delta=clock.getDelta();
+
+
+controls.update(delta);
+
+
+//__________________ ЕСЛИ СТОИТ change 1 ТО ДЕЛАЕМ РАСЧЁТЫ ДЛЯ НОВОЙ ТОЧКИ СЛЕДОВАНИЯ ______________
+
+
+if(meshes["box"].change==1){
+meshes["box"].change=0;
+// НАХОДИМ ВЕКТОР (НАПРАВЛЕНИЕ) НА ТОЧКУ ПУТИ
+meshes["box"].vector=new THREE.Vector3().subVectors({x:path[meshes["box"].now][0],y:path[meshes["box"].now][1],z:path[meshes["box"].now][2]},meshes["box"].position);
+// ДЕЛАЕМ ЕДИНИЧНЫЙ ВЕКТОР, ТО ЕСТЬ НОРМАЛИЗУЕМ
+meshes["box"].vector.normalize();
+meshes["box"].lookAt(path[meshes["box"].now][0],path[meshes["box"].now][1],path[meshes["box"].now][2]);
+}
+
+
+//__________________ ПЕРЕМЕЩАЕМ ОБЪЕКТ ПО ВЕКТОРУ С УКАЗАННОЙ СКОРОСТЬЮ ______________
+
+
+meshes["box"].position.x+=meshes["box"].vector.x*path[meshes["box"].now][3];
+meshes["box"].position.y+=meshes["box"].vector.y*path[meshes["box"].now][3];
+meshes["box"].position.z+=meshes["box"].vector.z*path[meshes["box"].now][3];
+
+
+//__________________ НАХОДИМ РАССТОЯНИЕ ОТ ОБЪЕКТА ДО ТОЧКИ ______________
+
+
+box_dist=Math.sqrt(
+Math.pow((path[meshes["box"].now][0]-meshes["box"].position.x),2)+
+Math.pow((path[meshes["box"].now][1]-meshes["box"].position.y),2)+
+Math.pow((path[meshes["box"].now][2]-meshes["box"].position.z),2)
+);
+
+
+//__________________ ЕСЛИ НАЙДЕННОЕ РАССТОЯНИЕ МЕНЬШЕ ТЕКУЩЕЙ СКОРОСТИ  ______________
+
+
+if(box_dist<path[meshes["box"].now][3]){
+// ВКЛЮЧАЕМ РАСЧЕТ ДЛЯ НОВОЙ ТОЧКИ
+meshes["box"].change=1;
+// СТАВИМ ОБЪЕКТ ПРЯМО НА КООРДИНАТЫ ТЕКУЩЕЙ ТОЧКИ
+meshes["box"].position.set(path[meshes["box"].now][0],path[meshes["box"].now][1],path[meshes["box"].now][2]);
+// СТАВИМ СЛЕДУЮЩУЮ ТОЧКУ
+meshes["box"].now++;
+// ЕСЛИ НОМЕР ТЕКУЩЕЙ ТОЧКИ БОЛЬШЕ ДЛИНЫ МАССИВА ТОЧЕК, ТО СТАВИМ ПЕРВУЮ ТОЧКУ
+if(meshes["box"].now>=path_length){
+meshes["box"].now=0;
+}
+}
+
+
+renderer.render(scene,camera);
+
+
+}
+
+
+</script>
+</body>
+</html>
