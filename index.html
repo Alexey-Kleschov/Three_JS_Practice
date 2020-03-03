@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+  <head> </head>
+  <body style="margin:0px;overflow:hidden;">
+    <canvas
+      id="canvas"
+      width="800"
+      height="600"
+      style="background:#000000;vertical-align:top;"
+    ></canvas>
+
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/FirstPersonControls.js"></script>
+
+    <script type="text/javascript">
+      "use strict";
+
+      var scene, camera, renderer, controls;
+      var canvas = document.getElementById("canvas");
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      var meshes = [];
+      var clock = new THREE.Clock();
+
+      camera = new THREE.PerspectiveCamera(60, width / height, 1, 10000);
+      camera.position.set(-300, 150, 200);
+
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true,
+        transparent: true,
+        premultipliedAlpha: false
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setClearColor(0x000000);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = 0;
+      renderer.gammaInput = true;
+      renderer.gammaOutput = true;
+
+      controls = new THREE.FirstPersonControls(camera, renderer.domElement);
+      controls.movementSpeed = 200;
+      controls.lookSpeed = 0.1;
+      controls.lookVertical = true;
+
+      scene = new THREE.Scene();
+
+      // ________________________ Axes directions________________________
+
+      scene.add(new THREE.AxesHelper(100));
+
+      // ________________________ environment light ________________________
+
+      var ambient = new THREE.AmbientLight(0xf5cf6b, 0.2);
+      scene.add(ambient);
+
+      // ________________________ sun light ________________________
+
+      var sun = new THREE.DirectionalLight(0xfbecc4, 1.2);
+      sun.position.set(350, 400, 350);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 4096;
+      sun.shadow.mapSize.height = 4096;
+      sun.shadow.camera.near = 10;
+      sun.shadow.camera.far = 1700;
+      sun.shadow.camera.left = -2000;
+      sun.shadow.camera.right = 2000;
+      sun.shadow.camera.top = 1350;
+      sun.shadow.camera.bottom = -1350;
+      sun.shadow.bias = -0.01;
+      sun.shadow.radius = 1;
+      scene.add(sun);
+
+      scene.add(new THREE.DirectionalLightHelper(sun, 100));
+
+      //__________________ sky - box ______________
+
+      meshes["sky"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(1000, 1000, 1000),
+        new THREE.MeshLambertMaterial({
+          color: 0x004080,
+          side: THREE.BackSide
+        })
+      );
+      meshes["sky"].receiveShadow = true;
+      meshes["sky"].position.set(0, 480, 0);
+      scene.add(meshes["sky"]);
+
+      //__________________ flour______________
+
+      meshes["ground"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(1000, 1000),
+        new THREE.MeshPhongMaterial({
+          color: 0xa0a0a0
+        })
+      );
+      meshes["ground"].receiveShadow = true;
+      meshes["ground"].position.y = -10;
+      meshes["ground"].geometry.applyMatrix(
+        new THREE.Matrix4().makeRotationX(-90 * (Math.PI / 180))
+      );
+      scene.add(meshes["ground"]);
+
+      //__________________ box 1 ______________
+
+      meshes["box_1"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(20, 20, 20),
+        new THREE.MeshLambertMaterial({ color: 0xffc000 })
+      );
+      meshes["box_1"].receiveShadow = true;
+      meshes["box_1"].castShadow = true;
+      meshes["box_1"].position.set(200, 50, -100);
+      scene.add(meshes["box_1"]);
+
+      //__________________ box 2 ______________
+
+      meshes["box_2"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(20, 20, 20),
+        new THREE.MeshLambertMaterial({ color: 0x009000 })
+      );
+      meshes["box_2"].receiveShadow = true;
+      meshes["box_2"].castShadow = true;
+      meshes["box_2"].position.set(350, 50, 0);
+      scene.add(meshes["box_2"]);
+
+      //__________________ box 3 ______________
+
+      meshes["box_3"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(20, 20, 20),
+        new THREE.MeshPhongMaterial({ color: 0xff0000 })
+      );
+      meshes["box_3"].receiveShadow = true;
+      meshes["box_3"].castShadow = true;
+      meshes["box_3"].position.set(350, 100, 150);
+      scene.add(meshes["box_3"]);
+
+      //__________________ gun 1, momentally turn to the camera ______________
+
+      meshes["cannon_1"] = new THREE.Mesh(
+        new THREE.CylinderGeometry(2, 10, 50, 6, 1, false),
+        new THREE.MeshNormalMaterial({
+          wireframe: false
+        })
+      );
+      meshes["cannon_1"].geometry.applyMatrix(
+        new THREE.Matrix4().makeRotationX(Math.PI / 2)
+      );
+      meshes["cannon_1"].castShadow = true;
+      meshes["cannon_1"].position.set(0, 50, 0);
+      scene.add(meshes["cannon_1"]);
+
+      //__________________ gun 2,  slowly turn to the camera ______________
+
+      meshes["cannon_2"] = new THREE.Mesh(
+        new THREE.CylinderGeometry(2, 10, 50, 6, 1, false),
+        new THREE.MeshNormalMaterial({
+          wireframe: false
+        })
+      );
+      meshes["cannon_2"].geometry.applyMatrix(
+        new THREE.Matrix4().makeRotationX(Math.PI / 2)
+      );
+      meshes["cannon_2"].castShadow = true;
+      meshes["cannon_2"].position.set(100, 50, 0);
+      meshes["cannon_2"].look_next; // new turn angles to the camera
+      meshes["cannon_2"].look_now; // previous turn angles to the camera
+      scene.add(meshes["cannon_2"]);
+
+      var cannon_2_mode = 1; // turn modes
+
+      //__________________ gun 3, slowly turn to several objects ______________
+
+      function copyArray(arr) {
+        var res = [];
+        for (var i = 0; i < arr.length; i++) {
+          res[i] = arr[i];
+        }
+        return res;
+      }
+
+      meshes["cannon_3"] = new THREE.Mesh(
+        new THREE.CylinderGeometry(2, 10, 50, 6, 1, false),
+        new THREE.MeshNormalMaterial({
+          wireframe: false
+        })
+      );
+      meshes["cannon_3"].geometry.applyMatrix(
+        new THREE.Matrix4().makeRotationX(Math.PI / 2)
+      );
+      meshes["cannon_3"].castShadow = true;
+      meshes["cannon_3"].position.set(200, 50, 0);
+      meshes["cannon_3"].look_next; // new turn angles to the camera
+      meshes["cannon_3"].look_now; // previous turn angles to the camera
+      meshes["cannon_3"].objects = ["box_1", "box_2", "box_3"]; // object list to watch
+      meshes["cannon_3"].mem = copyArray(meshes["cannon_3"].objects); // object list witch not watched yet
+      meshes["cannon_3"].now = meshes["cannon_3"].mem.shift(); // object we see now
+      scene.add(meshes["cannon_3"]);
+
+      //__________________ target from gun 3 ______________
+
+      meshes["target"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(2, 2, 2),
+        new THREE.MeshBasicMaterial({ color: 0xff0000 })
+      );
+      scene.add(meshes["target"]);
+
+      //__________________ distance from gun to object ______________
+
+      meshes["distance"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(2, 2, 2),
+        new THREE.MeshBasicMaterial({ color: 0x0000ff })
+      );
+      scene.add(meshes["distance"]);
+
+      var target = { x: 0, y: 0, z: 0 };
+      var distance_to_object;
+      var test_x, test_y, test_z;
+
+      loop();
+
+      // ________________________ rendering ________________________
+
+      function loop() {
+        requestAnimationFrame(loop);
+
+        var delta = clock.getDelta();
+
+        controls.update(delta);
+
+        //__________________ gun 1 ___________________
+
+        meshes["cannon_1"].lookAt(camera.position);
+
+        //__________________ gun 2 ___________________
+
+        // turn to all coords
+
+        if (cannon_2_mode == 1) {
+          // copy current turn of gun
+          meshes["cannon_2"].look_now = new THREE.Quaternion().copy(
+            meshes["cannon_2"].quaternion
+          );
+          // turn the gun to the camera
+          meshes["cannon_2"].lookAt(camera.position);
+          //  copy new next turn to get always new camera coords, if camera has turned and we need to turn to another side
+          meshes["cannon_2"].look_next = new THREE.Quaternion().copy(
+            meshes["cannon_2"].quaternion
+          );
+          // set the first turn to the gun
+          meshes["cannon_2"].quaternion.copy(meshes["cannon_2"].look_now);
+          // turn gun quaternion (first turn, where turn, which an object quaterion, turn speed)
+          THREE.Quaternion.slerp(
+            meshes["cannon_2"].look_now,
+            meshes["cannon_2"].look_next,
+            meshes["cannon_2"].quaternion,
+            0.01
+          );
+        }
+        //turn with replace Y gun coords. The gun not follows the object vertical
+        if (cannon_2_mode == 2) {
+          // copy current gun turn
+          meshes["cannon_2"].look_now = new THREE.Quaternion().copy(
+            meshes["cannon_2"].quaternion
+          );
+          // turn the gun to the camera
+          // X - camera, Y - gun, 50 sm of the flour, z - from camera
+          meshes["cannon_2"].lookAt(camera.position.x, 50, camera.position.z);
+         // copy new - next turn,for always getting new camera coords, if the camera has been turned and need to turn to another side
+          meshes["cannon_2"].look_next = new THREE.Quaternion().copy(
+            meshes["cannon_2"].quaternion
+          );
+          // set the first gun turn
+          meshes["cannon_2"].quaternion.copy(meshes["cannon_2"].look_now);
+          // turn gun quaternion (first turn, where turn, which an object quaterion, turn speed)
+          THREE.Quaternion.slerp(
+            meshes["cannon_2"].look_now,
+            meshes["cannon_2"].look_next,
+            meshes["cannon_2"].quaternion,
+            0.01
+          );
+        }
+
+        //__________________ gun 3 ___________________
+
+        var timer = Date.now() * 0.0004;
+
+        meshes["box_1"].position.x =
+          meshes["box_1"].position.x + Math.sin(timer * 10) * 0.2;
+        meshes["box_1"].position.y =
+          meshes["box_1"].position.y + Math.cos(timer * 10) * 0.2;
+
+        meshes["cannon_3"].look_now = new THREE.Quaternion().copy(
+          meshes["cannon_3"].quaternion
+        );
+        meshes["cannon_3"].lookAt(meshes[meshes["cannon_3"].now].position);
+        meshes["cannon_3"].look_next = new THREE.Quaternion().copy(
+          meshes["cannon_3"].quaternion
+        );
+        meshes["cannon_3"].quaternion.copy(meshes["cannon_3"].look_now);
+        THREE.Quaternion.slerp(
+          meshes["cannon_3"].quaternion,
+          meshes["cannon_3"].look_next,
+          meshes["cannon_3"].quaternion,
+          0.02
+        );
+
+        //__________________ find the single target vector from gun 3 based on QUATERNINON ______________
+
+        target.x =
+          -2 *
+          (meshes["cannon_3"].quaternion._x * meshes["cannon_3"].quaternion._z +
+            meshes["cannon_3"].quaternion._w *
+              meshes["cannon_3"].quaternion._y);
+        target.y =
+          -2 *
+          (meshes["cannon_3"].quaternion._y * meshes["cannon_3"].quaternion._z -
+            meshes["cannon_3"].quaternion._w *
+              meshes["cannon_3"].quaternion._x);
+        target.z =
+          -1 +
+          2 *
+            (meshes["cannon_3"].quaternion._x *
+              meshes["cannon_3"].quaternion._x +
+              meshes["cannon_3"].quaternion._y *
+                meshes["cannon_3"].quaternion._y);
+
+        //__________________  from the gun 3 place the target with found single vector with 60sm shift ______________
+        meshes["target"].position.x =
+          meshes["cannon_3"].position.x - target.x * 60;
+        meshes["target"].position.y =
+          meshes["cannon_3"].position.y - target.y * 60;
+        meshes["target"].position.z =
+          meshes["cannon_3"].position.z - target.z * 60;
+
+        //__________________ find the distance from gun 3 to the object ______________
+
+        distance_to_object = Math.sqrt(
+          Math.pow(
+            meshes[meshes["cannon_3"].now].position.x -
+              meshes["cannon_3"].position.x,
+            2
+          ) +
+            Math.pow(
+              meshes[meshes["cannon_3"].now].position.y -
+                meshes["cannon_3"].position.y,
+              2
+            ) +
+            Math.pow(
+              meshes[meshes["cannon_3"].now].position.z -
+                meshes["cannon_3"].position.z,
+              2
+            )
+        );
+
+        //__________________ take the distance with vector direction from gun 3 coords ______________
+        test_x = meshes["cannon_3"].position.x - target.x * distance_to_object;
+        test_y = meshes["cannon_3"].position.y - target.y * distance_to_object;
+        test_z = meshes["cannon_3"].position.z - target.z * distance_to_object;
+
+        //__________________ show the distance from gun 3 to the object ______________
+
+        meshes["distance"].position.x = test_x;
+        meshes["distance"].position.y = test_y;
+        meshes["distance"].position.z = test_z;
+
+        //__________________  if the distance from all coords of taken point to object coords less then 5 sm, we`ve got the target ______________
+        if (
+          Math.abs(test_x - meshes[meshes["cannon_3"].now].position.x) < 5 &&
+          Math.abs(test_y - meshes[meshes["cannon_3"].now].position.y) < 5 &&
+          Math.abs(test_z - meshes[meshes["cannon_3"].now].position.z) < 5
+        ) {
+          // if we`ve gotten all objects, we refresh th list
+          if (meshes["cannon_3"].mem.length == 0) {
+            meshes["cannon_3"].mem = copyArray(meshes["cannon_3"].objects);
+          }
+          // take the target nawe with removing list item
+          meshes["cannon_3"].now = meshes["cannon_3"].mem.shift();
+        }
+
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>
