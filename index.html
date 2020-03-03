@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+  <head> </head>
+  <body style="margin:0px;overflow:hidden;">
+    <canvas
+      id="canvas"
+      width="800"
+      height="600"
+      style="background:#000000;vertical-align:top;"
+    ></canvas>
+
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/TrackballControls.js"></script>
+
+    <script type="text/javascript">
+      "use strict";
+
+      var scene, camera, renderer, controls;
+      var canvas = document.getElementById("canvas");
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      var meshes = [];
+      var clock = new THREE.Clock();
+      var timer = 0;
+
+      camera = new THREE.PerspectiveCamera(60, width / height, 1, 10000);
+      camera.position.set(80, 100, 150);
+
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true,
+        transparent: true,
+        premultipliedAlpha: false
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setClearColor(0x000000);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = 0;
+      renderer.gammaInput = true;
+      renderer.gammaOutput = true;
+
+      controls = new THREE.TrackballControls(camera);
+      controls.rotateSpeed = 1.0;
+      controls.zoomSpee = 1.2;
+      controls.panSpeed = 0.8;
+      controls.noZoom = false;
+      controls.noPan = false;
+      controls.staticMoving = true;
+      controls.dynamicDampingFactor = 0.3;
+      controls.keys = [65, 83, 68];
+      controls.target.set(80, 50, 0);
+
+      scene = new THREE.Scene();
+
+      // ________________________ УКАЗАТЕЛЬ НАПРАВЛЕНИЯ ОСЕЙ ________________________
+
+      scene.add(new THREE.AxesHelper(100));
+
+      // ________________________ СВЕТ ОКРУЖЕНИЯ ________________________
+
+      var ambient = new THREE.AmbientLight(0xffffff, 0.2);
+      scene.add(ambient);
+
+      // ________________________  СВЕТ СОЛНЦА ________________________
+
+      var sun = new THREE.DirectionalLight(0xffffff, 1.2);
+      sun.position.set(350, 400, 350);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 4096;
+      sun.shadow.mapSize.height = 4096;
+      sun.shadow.camera.near = 10;
+      sun.shadow.camera.far = 1700;
+      sun.shadow.camera.left = -2000;
+      sun.shadow.camera.right = 2000;
+      sun.shadow.camera.top = 1350;
+      sun.shadow.camera.bottom = -1350;
+      //sun.shadow.bias=-0.00005;
+      sun.shadow.radius = 1;
+      scene.add(sun);
+
+      //scene.add(new THREE.DirectionalLightHelper(sun,100));
+
+      //__________________ ЗАГРУЗЧИК ТЕКСТУР ______________
+
+      var manager_to_load = 0; // СКОЛЬКО НАДО ЗАГРУЗИТЬ ЧЕРЕЗ МЕНДЖЕР ЗАГРУЗОК. ПОДСЧИТЫВАЕТСЯ НИЖЕ
+      var manager_loaded = 0; // ЗАГРУЖЕНО В МЕНЕДЖЕРЕ
+
+      var loadingManager = new THREE.LoadingManager();
+      loadingManager.onProgress = function(item, loaded, total) {
+        console.log(item, loaded, total);
+        manager_loaded = loaded;
+        if (loaded == total) {
+          init_last();
+          console.log("ФАЙЛЫ В МЕНЕДЖЕРЕ ЗАГРУЖЕНЫ");
+        }
+      };
+
+      var tex = [];
+      var texture_loader = new THREE.TextureLoader(loadingManager);
+
+      tex["wood"] = texture_loader.load("images/wood.jpg");
+      tex["wood"].wrapS = tex["wood"].wrapT = THREE.RepeatWrapping;
+      tex["wood"].repeat.set(5, 5);
+
+      tex["wall"] = texture_loader.load("images/wall.jpg");
+      tex["wall_f"] = texture_loader.load("images/wall_f.png");
+
+      tex["box"] = texture_loader.load("images/box.jpg");
+      tex["corner"] = texture_loader.load("images/corner.png");
+      tex["strip"] = texture_loader.load("images/strip.png");
+
+      tex["strip_blue_a"] = texture_loader.load("images/strip_blue_a.png");
+      tex["strip_blue_a"].wrapS = tex["strip_blue_a"].wrapT =
+        THREE.RepeatWrapping;
+
+      tex["strip_blue_b"] = texture_loader.load("images/strip_blue_b.png");
+      tex["strip_blue_b"].wrapS = tex["strip_blue_b"].wrapT =
+        THREE.RepeatWrapping;
+
+      for (var n in tex) {
+        manager_to_load++; // ПОДСЧИТЫВАЕМ КОЛИЧЕСТВО ТЕКСТУР ДЛЯ ЗАГРУЗКИ ЧЕРЕЗ МЕНДЖЕР
+      }
+
+      function init_last() {
+        loop();
+      }
+
+      //__________________ НЕБО - ЯЩИК ______________
+
+      meshes["sky"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(1000, 1000, 1000),
+        new THREE.MeshLambertMaterial({
+          map: tex["wall"],
+          emissive: 0xffc000,
+          emissiveIntensity: 1,
+          emissiveMap: tex["wall_f"],
+          side: THREE.BackSide
+        })
+      );
+      meshes["sky"].receiveShadow = true;
+      meshes["sky"].position.set(0, 480, 0);
+      scene.add(meshes["sky"]);
+
+      //__________________ ПОЛ  ______________
+
+      meshes["ground"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(1000, 1000),
+        new THREE.MeshPhongMaterial({
+          map: tex["wood"]
+        })
+      );
+      meshes["ground"].receiveShadow = true;
+      meshes["ground"].position.y = -10;
+      meshes["ground"].geometry.applyMatrix(
+        new THREE.Matrix4().makeRotationX(-90 * (Math.PI / 180))
+      );
+      scene.add(meshes["ground"]);
+
+      //__________________ МИГАНИЕ ЯЩИКА ______________
+
+      meshes["flicker"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(50, 50, 50),
+        new THREE.MeshPhongMaterial({
+          map: tex["box"],
+          emissive: 0xffffff,
+          emissiveIntensity: 1,
+          emissiveMap: tex["corner"]
+        })
+      );
+      meshes["flicker"].castShadow = true;
+      meshes["flicker"].position.set(0, 50, 0);
+      scene.add(meshes["flicker"]);
+
+      var mig_p = 0;
+      var mig_w = 0.01; // НАПРАВЛЕНИЕ ИНТЕНСИВНОСТИ МИГАНИЯ
+
+      //__________________ ПОЛОСКА  1 ______________
+
+      meshes["strip_1"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(50, 50, 50),
+        new THREE.MeshBasicMaterial({
+          //color:0x00ffff,
+          map: tex["strip"],
+          transparent: true,
+          blending: THREE.AdditiveBlending
+        })
+      );
+      meshes["strip_1"].castShadow = true;
+      meshes["strip_1"].position.set(50, 50, 0);
+      scene.add(meshes["strip_1"]);
+
+      //__________________ ПОЛОСКА  2 ______________
+
+      meshes["plane"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(50, 50),
+        new THREE.MeshPhongMaterial({
+          map: tex["box"],
+          shadowSide: THREE.FrontSide // ДЛЯ ОТБРАСЫВАНИЯ ТЕНИ С ДРУГОЙ СТОРОНЫ
+        })
+      );
+      meshes["plane"].castShadow = true;
+      meshes["plane"].position.set(100, 50, 0);
+      scene.add(meshes["plane"]);
+
+      meshes["strip_2"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(50, 50),
+        new THREE.MeshPhongMaterial({
+          map: tex["strip_blue_a"],
+          transparent: true
+        })
+      );
+      meshes["strip_2"].castShadow = true;
+      meshes["strip_2"].position.set(100, 50, 1);
+      scene.add(meshes["strip_2"]);
+
+      //__________________ ПОЛОСКА  3 ______________
+
+      meshes["strip_3"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(50, 50),
+        new THREE.MeshPhongMaterial({
+          map: tex["box"],
+          lightMap: tex["strip_blue_b"],
+          lightMapIntensity: 2,
+          shadowSide: THREE.FrontSide //  ДЛЯ ОТБРАСЫВАНИЯ ТЕНИ С ДРУГОЙ СТОРОНЫ
+        })
+      );
+      meshes["strip_3"].castShadow = true;
+      meshes["strip_3"].position.set(150, 50, 0);
+      scene.add(meshes["strip_3"]);
+
+      meshes["strip_3"].geometry.addAttribute(
+        "uv2",
+        new THREE.Float32BufferAttribute(
+          meshes["strip_3"].geometry.attributes.uv.array,
+          2
+        )
+      );
+
+      var strip_p = 0;
+      var strip_w = 0.01; //НАПРАВЛЕНИЕ СМЕЩЕНИЯ UV РАЗВЕРТКИ
+
+
+      // ________________________ РЕНДЕРИНГ  ________________________
+
+      function loop() {
+        requestAnimationFrame(loop);
+
+        var delta = clock.getDelta();
+
+        controls.update(delta);
+
+        mig_p += mig_w;
+        if (mig_p > 0.99) {
+          mig_w = -0.01;
+        }
+        if (mig_p < 0.01) {
+          mig_w = 0.01;
+        }
+
+        //__________________ МИГАНИЕ ЯЩИКА ______________
+
+        meshes["flicker"].material.emissiveIntensity = mig_p;
+
+        //__________________ МИГАНИЕ СТЕН ______________
+
+        meshes["sky"].material.emissiveIntensity = mig_p * 4;
+
+        //__________________ ПОЛОСКА  1 ______________
+
+        meshes["strip_1"].material.opacity = 0.6 + mig_p;
+
+        //__________________ ПОЛОСКА  2 и 3 ______________
+
+        strip_p += strip_w;
+        strip_p = parseFloat(strip_p.toFixed(2));
+        if (strip_p > 0.95) {
+          strip_w = -0.01;
+        }
+        if (strip_p < 0.01) {
+          strip_w = 0.01;
+        }
+
+        tex["strip_blue_a"].offset.y = -strip_p;
+
+        meshes["strip_3"].geometry.attributes.uv2.array = new Float32Array([
+          0,
+          1 - strip_p,
+          1,
+          1 - strip_p,
+          0,
+          0 - strip_p,
+          1,
+          0 - strip_p
+        ]);
+        meshes["strip_3"].geometry.attributes.uv2.needsUpdate = true;
+
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>
