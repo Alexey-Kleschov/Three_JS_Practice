@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+  <head> </head>
+  <body style="margin:0px;overflow:hidden;">
+    <div id="game">
+      <canvas
+        id="canvas"
+        width="800"
+        height="600"
+        style="background:#000000;vertical-align:top;"
+      ></canvas>
+    </div>
+
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/FirstPersonControls.js"></script>
+
+    <script type="text/javascript">
+      "use strict";
+
+      var scene, camera, renderer, controls;
+      var canvas = document.getElementById("canvas");
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      var meshes = [];
+      var clock = new THREE.Clock();
+      var timer = 0;
+
+      camera = new THREE.PerspectiveCamera(60, width / height, 1, 10000);
+      camera.position.set(-300, 150, 200);
+
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true,
+        transparent: true,
+        premultipliedAlpha: false
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setClearColor(0x000000);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = 0;
+      renderer.gammaInput = true;
+      renderer.gammaOutput = true;
+
+      controls = new THREE.FirstPersonControls(camera, renderer.domElement);
+      controls.movementSpeed = 200;
+      controls.lookSpeed = 0.1;
+      controls.lookVertical = true;
+
+      scene = new THREE.Scene();
+
+      // ________________________ Axes directions ________________________
+
+      scene.add(new THREE.AxesHelper(100));
+
+      // ________________________ Environment light ________________________
+
+      var ambient = new THREE.AmbientLight(0xf5cf6b, 0.2);
+      scene.add(ambient);
+
+      // ________________________ Sun light ________________________
+
+      var sun = new THREE.DirectionalLight(0xfbecc4, 1.2);
+      sun.position.set(350, 400, 350);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 4096;
+      sun.shadow.mapSize.height = 4096;
+      sun.shadow.camera.near = 10;
+      sun.shadow.camera.far = 1700;
+      sun.shadow.camera.left = -2000;
+      sun.shadow.camera.right = 2000;
+      sun.shadow.camera.top = 1350;
+      sun.shadow.camera.bottom = -1350;
+      sun.shadow.bias = -0.005;
+      sun.shadow.radius = 1;
+      scene.add(sun);
+
+      scene.add(new THREE.DirectionalLightHelper(sun, 100));
+
+      //__________________ sky - box ______________
+
+      meshes["sky"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(1000, 1000, 1000),
+        new THREE.MeshLambertMaterial({
+          color: 0x004080,
+          side: THREE.BackSide
+        })
+      );
+      meshes["sky"].receiveShadow = true;
+      meshes["sky"].position.set(0, 480, 0);
+      scene.add(meshes["sky"]);
+
+      //__________________ Flour______________
+
+      meshes["ground"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(1000, 1000),
+        new THREE.MeshPhongMaterial({
+          color: 0x909090
+        })
+      );
+      meshes["ground"].receiveShadow = true;
+      meshes["ground"].position.y = -10;
+      meshes["ground"].geometry.applyMatrix(
+        new THREE.Matrix4().makeRotationX(-90 * (Math.PI / 180))
+      );
+      scene.add(meshes["ground"]);
+
+      //__________________ Object moving ______________
+
+      //__________________ to X ______________
+
+      meshes["box_move_x"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(5, 5, 5),
+        new THREE.MeshLambertMaterial({ color: 0xffc000 })
+      );
+      meshes["box_move_x"].castShadow = true;
+      meshes["box_move_x"].position.set(5, 0, 0);
+      scene.add(meshes["box_move_x"]);
+
+      //__________________ to Y ______________
+
+      meshes["box_move_y"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(5, 5, 5),
+        new THREE.MeshLambertMaterial({ color: 0x00d000 })
+      );
+      meshes["box_move_y"].castShadow = true;
+      meshes["box_move_y"].position.set(0, 5, 0);
+      scene.add(meshes["box_move_y"]);
+
+      //__________________ to Z ______________
+
+      meshes["box_move_z"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(5, 5, 5),
+        new THREE.MeshLambertMaterial({ color: 0x0000d0 })
+      );
+      meshes["box_move_z"].castShadow = true;
+      meshes["box_move_z"].position.set(0, 0, 5);
+      scene.add(meshes["box_move_z"]);
+
+      //__________________ to XZ ______________
+
+      meshes["box_move_xz"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(5, 5, 5),
+        new THREE.MeshLambertMaterial({ color: 0xf000d0 })
+      );
+      meshes["box_move_xz"].castShadow = true;
+      meshes["box_move_xz"].position.set(5, 0, 5);
+      scene.add(meshes["box_move_xz"]);
+
+      //__________________ to XY ______________
+
+      meshes["box_move_xy"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(5, 5, 5),
+        new THREE.MeshLambertMaterial({ color: 0x00a0a0 })
+      );
+      meshes["box_move_xy"].castShadow = true;
+      meshes["box_move_xy"].position.set(-5, 5, 0);
+      scene.add(meshes["box_move_xy"]);
+
+      //__________________ following to another box with rotate to it ______________
+
+      meshes["box_move_follow"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(2, 2, 10),
+        new THREE.MeshLambertMaterial({ color: 0xff0000 })
+      );
+      meshes["box_move_follow"].castShadow = true;
+      meshes["box_move_follow"].position.set(-100, 5, -100);
+      meshes["box_move_follow"].vector = { x: 0, y: 0, z: 0 };
+      scene.add(meshes["box_move_follow"]);
+
+      var follow_mode = 3; // following modes
+
+      loop();
+
+      // ________________________ rendering________________________
+
+      function loop() {
+        requestAnimationFrame(loop);
+
+        var delta = clock.getDelta();
+
+        controls.update(delta);
+
+        //__________________ moving ______________
+
+        meshes["box_move_x"].position.x += 0.1; // yellow box
+        meshes["box_move_y"].position.y += 0.1; // green box
+        meshes["box_move_z"].position.z += 0.1; // sky box
+
+        meshes["box_move_xz"].position.x += 0.1; // purple box
+        meshes["box_move_xz"].position.z += 0.05;
+
+        meshes["box_move_xy"].position.x -= 0.1; // blue box
+        meshes["box_move_xy"].position.y += 0.05;
+
+        //__________________ put the box back if movement greater than 1 meter ______________
+
+        if (meshes["box_move_x"].position.x > 100) {
+          meshes["box_move_x"].position.x = 5;
+        }
+        if (meshes["box_move_y"].position.y > 100) {
+          meshes["box_move_y"].position.y = 5;
+        }
+        if (meshes["box_move_z"].position.z > 100) {
+          meshes["box_move_z"].position.z = 5;
+        }
+        if (meshes["box_move_xz"].position.x > 100) {
+          meshes["box_move_xz"].position.x = 5;
+          meshes["box_move_xz"].position.z = 5;
+        }
+        if (meshes["box_move_xy"].position.x < -100) {
+          meshes["box_move_xy"].position.x = -5;
+          meshes["box_move_xy"].position.y = 5;
+        }
+
+        //__________________ following to another box with rotate to it ______________
+
+        if (follow_mode == 1) {
+          // finding the vector (direction) to the box
+          meshes["box_move_follow"].vector = new THREE.Vector3().subVectors(
+            meshes["box_move_xy"].position,
+            meshes["box_move_follow"].position
+          );
+          // normal vector
+          meshes["box_move_follow"].vector.normalize();
+          // rotate to the object (momental)
+          meshes["box_move_follow"].lookAt(meshes["box_move_xy"].position);
+        }
+
+        //__________________ following to another box with rotate to it. without height following ______________
+
+        if (follow_mode == 2) {
+          // finding the vector (direction) to the box
+          meshes["box_move_follow"].vector = new THREE.Vector3().subVectors(
+            meshes["box_move_xy"].position,
+            meshes["box_move_follow"].position
+          );
+          // remove Y direction
+          meshes["box_move_follow"].vector.y = 0;
+          // normal vector
+          meshes["box_move_follow"].vector.normalize();
+          // rotate to the object (momental)
+          meshes["box_move_follow"].lookAt(meshes["box_move_xy"].position);
+        }
+
+        //__________________ like a bullet moving ______________
+
+        if (follow_mode == 3) {
+          // all operations only once
+          if (
+            meshes["box_move_follow"].vector.x +
+              meshes["box_move_follow"].vector.y +
+              meshes["box_move_follow"].vector.z ==
+            0
+          ) {
+            // finding the vector (direction) to the box
+            meshes["box_move_follow"].vector = new THREE.Vector3().subVectors(
+              meshes["box_move_xy"].position,
+              meshes["box_move_follow"].position
+            );
+            // normal vector
+            meshes["box_move_follow"].vector.normalize();
+            //  rotate to the object
+            meshes["box_move_follow"].lookAt(meshes["box_move_xy"].position);
+          }
+        }
+
+        // following object and change coords to the vector direction
+
+        meshes["box_move_follow"].position.x +=
+          meshes["box_move_follow"].vector.x * 0.15;
+        meshes["box_move_follow"].position.y +=
+          meshes["box_move_follow"].vector.y * 0.15;
+        meshes["box_move_follow"].position.z +=
+          meshes["box_move_follow"].vector.z * 0.15;
+
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>

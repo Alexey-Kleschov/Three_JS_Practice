@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+  <head> </head>
+  <body style="margin:0px;overflow:hidden;">
+    <div id="game">
+      <canvas
+        id="canvas"
+        width="800"
+        height="600"
+        style="background:#000000;vertical-align:top;"
+      ></canvas>
+    </div>
+
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/FirstPersonControls.js"></script>
+
+    <script type="text/javascript">
+      "use strict";
+
+      var scene, camera, renderer, controls;
+      var canvas = document.getElementById("canvas");
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      var meshes = [];
+      var clock = new THREE.Clock();
+      var timer = 0;
+
+      camera = new THREE.PerspectiveCamera(60, width / height, 1, 10000);
+      camera.position.set(-300, 150, 200);
+
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true,
+        transparent: true,
+        premultipliedAlpha: false
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setClearColor(0x000000);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = 0;
+      renderer.gammaInput = true;
+      renderer.gammaOutput = true;
+
+      controls = new THREE.FirstPersonControls(camera, renderer.domElement);
+      controls.movementSpeed = 200;
+      controls.lookSpeed = 0.1;
+      controls.lookVertical = true;
+
+      scene = new THREE.Scene();
+
+      // ________________________ axes directions ________________________
+
+      scene.add(new THREE.AxesHelper(100));
+
+      // ________________________ Environment light ________________________
+
+      var ambient = new THREE.AmbientLight(0xf5cf6b, 0.2);
+      scene.add(ambient);
+
+      // ________________________ Sun light ________________________
+
+      var sun = new THREE.DirectionalLight(0xfbecc4, 1.2);
+      sun.position.set(350, 400, 350);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 4096;
+      sun.shadow.mapSize.height = 4096;
+      sun.shadow.camera.near = 10;
+      sun.shadow.camera.far = 1700;
+      sun.shadow.camera.left = -2000;
+      sun.shadow.camera.right = 2000;
+      sun.shadow.camera.top = 1350;
+      sun.shadow.camera.bottom = -1350;
+      sun.shadow.bias = -0.005;
+      sun.shadow.radius = 1;
+      scene.add(sun);
+
+      scene.add(new THREE.DirectionalLightHelper(sun, 100));
+
+      //__________________ sky - box  ______________
+
+      meshes["sky"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(1000, 1000, 1000),
+        new THREE.MeshLambertMaterial({
+          color: 0x004080,
+          side: THREE.BackSide
+        })
+      );
+      meshes["sky"].receiveShadow = true;
+      meshes["sky"].position.set(0, 480, 0);
+      scene.add(meshes["sky"]);
+
+      //__________________ Flour ______________
+
+      meshes["ground"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(1000, 1000),
+        new THREE.MeshPhongMaterial({
+          color: 0x909090
+        })
+      );
+      meshes["ground"].receiveShadow = true;
+      meshes["ground"].position.y = -10;
+      meshes["ground"].geometry.applyMatrix(
+        new THREE.Matrix4().makeRotationX(-90 * (Math.PI / 180))
+      );
+      scene.add(meshes["ground"]);
+
+      //__________________ Object moving______________
+
+      //__________________ to circle ______________
+
+      meshes["box_f_circle"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(5, 5, 5),
+        new THREE.MeshLambertMaterial({ color: 0xff0000 })
+      );
+      meshes["box_f_circle"].castShadow = true;
+      meshes["box_f_circle"].position.set(150, 0, 200);
+      meshes["box_f_circle"].coord = meshes["box_f_circle"].position.clone();
+      scene.add(meshes["box_f_circle"]);
+
+      //__________________ to circle and height ______________
+
+      meshes["box_f_circle_y"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(5, 5, 5),
+        new THREE.MeshLambertMaterial({ color: 0x00d000 })
+      );
+      meshes["box_f_circle_y"].castShadow = true;
+      meshes["box_f_circle_y"].position.set(250, 10, 200);
+      meshes["box_f_circle_y"].coord = meshes[
+        "box_f_circle_y"
+      ].position.clone();
+      scene.add(meshes["box_f_circle_y"]);
+
+      //__________________ to ellipse-oval compress X ______________
+
+      meshes["box_f_ellipse_x"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(5, 5, 5),
+        new THREE.MeshLambertMaterial({ color: 0x002090 })
+      );
+      meshes["box_f_ellipse_x"].castShadow = true;
+      meshes["box_f_ellipse_x"].position.set(350, 0, 200);
+      meshes["box_f_ellipse_x"].coord = meshes[
+        "box_f_ellipse_x"
+      ].position.clone();
+      scene.add(meshes["box_f_ellipse_x"]);
+
+      //__________________ to parabolic ______________
+
+      meshes["box_f_parabole"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(5, 5, 5),
+        new THREE.MeshLambertMaterial({ color: 0x002090 })
+      );
+      meshes["box_f_parabole"].castShadow = true;
+      meshes["box_f_parabole"].position.set(150, 0, 300);
+      meshes["box_f_parabole"].coord = meshes[
+        "box_f_parabole"
+      ].position.clone();
+      scene.add(meshes["box_f_parabole"]);
+
+      //__________________ to '8' ______________
+
+      meshes["box_f_8"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(5, 5, 5),
+        new THREE.MeshLambertMaterial({ color: 0xffc000 })
+      );
+      meshes["box_f_8"].castShadow = true;
+      meshes["box_f_8"].position.set(250, 0, 300);
+      meshes["box_f_8"].coord = meshes["box_f_8"].position.clone();
+      scene.add(meshes["box_f_8"]);
+
+      //__________________ to spirale ______________
+
+      meshes["box_f_helix"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(5, 5, 5),
+        new THREE.MeshLambertMaterial({ color: 0xff00ff })
+      );
+      meshes["box_f_helix"].castShadow = true;
+      meshes["box_f_helix"].position.set(350, 0, 300);
+      meshes["box_f_helix"].coord = meshes["box_f_helix"].position.clone();
+      scene.add(meshes["box_f_helix"]);
+
+      //__________________ to whirl ______________
+
+      meshes["box_f_whirl"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(8, 2, 2),
+        new THREE.MeshPhongMaterial({ color: 0xff0000 })
+      );
+      meshes["box_f_whirl"].castShadow = true;
+      meshes["box_f_whirl"].position.set(350, 0, 350);
+      meshes["box_f_whirl"].coord = meshes["box_f_whirl"].position.clone();
+      scene.add(meshes["box_f_whirl"]);
+
+      loop();
+
+      // ________________________ rendering ________________________
+
+      function loop() {
+        requestAnimationFrame(loop);
+
+        var delta = clock.getDelta();
+
+        controls.update(delta);
+
+        timer += 0.001;
+        //timer=Date.now()*0.00007;
+
+        //__________________ to circle ______________
+
+        meshes["box_f_circle"].position.x =
+          meshes["box_f_circle"].coord.x + Math.sin(timer * 50) * 50; // timer*50 - speed, )*50 - radius
+        meshes["box_f_circle"].position.z =
+          meshes["box_f_circle"].coord.z + Math.cos(timer * 50) * 50;
+        meshes["box_f_circle"].lookAt(meshes["box_f_circle"].coord);
+
+        //__________________ to circle and height ______________
+
+        meshes["box_f_circle_y"].position.x =
+          meshes["box_f_circle_y"].coord.x + Math.sin(timer * 20) * 50;
+        meshes["box_f_circle_y"].position.y =
+          meshes["box_f_circle_y"].coord.y + Math.sin(timer * 200) * 6;
+        meshes["box_f_circle_y"].position.z =
+          meshes["box_f_circle_y"].coord.z + Math.cos(timer * 20) * 50;
+
+        //__________________ to ellipse - oval compress X ______________
+
+        meshes["box_f_ellipse_x"].position.x =
+          meshes["box_f_ellipse_x"].coord.x + Math.sin(timer * 50) * 20;
+        meshes["box_f_ellipse_x"].position.z =
+          meshes["box_f_ellipse_x"].coord.z + Math.cos(timer * 50) * 50;
+
+        //__________________ to parabolic ______________
+
+        meshes["box_f_parabole"].position.x =
+          meshes["box_f_parabole"].coord.x + Math.sin(timer * 50) * 50;
+        meshes["box_f_parabole"].position.z =
+          meshes["box_f_parabole"].coord.z + Math.cos(timer * 100) * 50;
+
+        //__________________ to '8' ______________
+
+        meshes["box_f_8"].position.x =
+          meshes["box_f_8"].coord.x + Math.sin(timer * 40) * 50;
+        meshes["box_f_8"].position.z =
+          meshes["box_f_8"].coord.z + Math.cos(timer * 20) * 50;
+
+        //__________________ to spirale ______________
+
+        meshes["box_f_helix"].position.x =
+          meshes["box_f_helix"].coord.x + Math.sin(timer * 40) * 50;
+        meshes["box_f_helix"].position.y =
+          meshes["box_f_helix"].coord.y + timer * 200;
+        meshes["box_f_helix"].position.z =
+          meshes["box_f_helix"].coord.z + Math.cos(timer * 40) * 50;
+
+        //__________________ to whirl ______________
+
+        meshes["box_f_whirl"].position.x =
+          meshes["box_f_whirl"].coord.x + Math.sin(timer * 150) * (timer * 50);
+        meshes["box_f_whirl"].position.y =
+          meshes["box_f_whirl"].coord.y + timer * 100;
+        meshes["box_f_whirl"].position.z =
+          meshes["box_f_whirl"].coord.z + Math.cos(timer * 150) * (timer * 50);
+        meshes["box_f_whirl"].lookAt(meshes["box_f_whirl"].coord);
+
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>
