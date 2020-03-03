@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+  <head> </head>
+  <body style="margin:0px;overflow:hidden;">
+    <canvas
+      id="canvas"
+      width="800"
+      height="600"
+      style="background:#000000;vertical-align:top;"
+    ></canvas>
+
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/FirstPersonControls.js"></script>
+
+    <script type="text/javascript">
+      "use strict";
+
+      var scene, camera, renderer, controls;
+      var canvas = document.getElementById("canvas");
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      var meshes = [];
+      var clock = new THREE.Clock();
+      var timer = 0;
+
+      camera = new THREE.PerspectiveCamera(60, width / height, 1, 10000);
+      camera.position.set(80, 50, 120);
+      camera.lookAt(80, 50, 0);
+
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true,
+        transparent: true,
+        premultipliedAlpha: false
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setClearColor(0x000000);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = 0;
+      renderer.gammaInput = true;
+      renderer.gammaOutput = true;
+
+      controls = new THREE.FirstPersonControls(camera, renderer.domElement);
+      controls.movementSpeed = 200;
+      controls.lookSpeed = 0.1;
+      controls.lookVertical = true;
+
+      scene = new THREE.Scene();
+
+      // ________________________ УКАЗАТЕЛЬ НАПРАВЛЕНИЯ ОСЕЙ ________________________
+
+      scene.add(new THREE.AxesHelper(100));
+
+      // ________________________ СВЕТ ОКРУЖЕНИЯ ________________________
+
+      var ambient = new THREE.AmbientLight(0xffffff, 0.2);
+      scene.add(ambient);
+
+      // ________________________ СВЕТ СОЛНЦА ________________________
+
+      var sun = new THREE.DirectionalLight(0xffffff, 1.2);
+      sun.position.set(350, 400, 350);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 4096;
+      sun.shadow.mapSize.height = 4096;
+      sun.shadow.camera.near = 10;
+      sun.shadow.camera.far = 1700;
+      sun.shadow.camera.left = -2000;
+      sun.shadow.camera.right = 2000;
+      sun.shadow.camera.top = 1350;
+      sun.shadow.camera.bottom = -1350;
+      //sun.shadow.bias=-0.00005;
+      sun.shadow.radius = 1;
+      scene.add(sun);
+
+      //scene.add(new THREE.DirectionalLightHelper(sun,100));
+
+      //__________________ ЗАГРУЗЧИК ТЕКСТУР ______________
+
+      var manager_to_load = 0; // СКОЛЬКО НАДО ЗАГРУЗИТЬ ЧЕРЕЗ МЕНДЖЕР ЗАГРУЗОК. ПОДСЧИТЫВАЕТСЯ НИЖЕ
+      var manager_loaded = 0; // ЗАГРУЖЕНО В МЕНЕДЖЕРЕ
+
+      var loadingManager = new THREE.LoadingManager();
+      loadingManager.onProgress = function(item, loaded, total) {
+        console.log(item, loaded, total);
+        manager_loaded = loaded;
+        if (loaded == total) {
+          init_last();
+          console.log("ФАЙЛЫ В МЕНЕДЖЕРЕ ЗАГРУЖЕНЫ");
+        }
+      };
+
+      var tex = [];
+      var texture_loader = new THREE.TextureLoader(loadingManager);
+
+      tex["wood"] = texture_loader.load("images/wood.jpg");
+      tex["wood"].wrapS = tex["wood"].wrapT = THREE.RepeatWrapping;
+      tex["wood"].repeat.set(10, 10);
+
+      tex["wall"] = texture_loader.load("images/wall.jpg");
+      tex["wall"].wrapS = THREE.RepeatWrapping;
+      tex["wall"].repeat.x = 2;
+
+      tex["ring"] = texture_loader.load("images/ring.png");
+      tex["water"] = texture_loader.load("images/water.jpg");
+      tex["water"].wrapS = tex["water"].wrapT = THREE.RepeatWrapping;
+      tex["grass"] = texture_loader.load("images/grass.jpg");
+      tex["grass"].wrapS = tex["grass"].wrapT = THREE.RepeatWrapping;
+
+      for (var n in tex) {
+        manager_to_load++; // ПОДСЧИТЫВАЕМ КОЛИЧЕСТВО ТЕКСТУР ДЛЯ ЗАГРУЗКИ ЧЕРЕЗ МЕНДЖЕР
+      }
+
+      function init_last() {
+        tex["ring_2"] = tex["ring"].clone();
+        tex["ring_2"].center.x = 0.5;
+        tex["ring_2"].center.y = 0.5;
+        tex["ring_2"].needsUpdate = true;
+        meshes["plane_2"].material.map = tex["ring_2"];
+        loop();
+      }
+
+      //__________________ НЕБО - ЯЩИК ______________
+
+      meshes["sky"] = new THREE.Mesh(
+        new THREE.BoxBufferGeometry(1000, 1000, 1000),
+        new THREE.MeshLambertMaterial({
+          map: tex["wall"],
+          side: THREE.BackSide
+        })
+      );
+      meshes["sky"].receiveShadow = true;
+      meshes["sky"].position.set(0, 480, 0);
+      scene.add(meshes["sky"]);
+
+      //__________________  ПОЛ ______________
+
+      meshes["ground"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(1000, 1000),
+        new THREE.MeshPhongMaterial({
+          map: tex["wood"]
+        })
+      );
+      meshes["ground"].receiveShadow = true;
+      meshes["ground"].position.y = -10;
+      meshes["ground"].geometry.applyMatrix(
+        new THREE.Matrix4().makeRotationX(-90 * (Math.PI / 180))
+      );
+      scene.add(meshes["ground"]);
+
+      //__________________ ВРАЩЕНИЕ 1 ______________
+
+      meshes["plane_1"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(50, 50),
+        new THREE.MeshPhongMaterial({
+          map: tex["ring"]
+        })
+      );
+      meshes["plane_1"].position.set(0, 50, 0);
+      scene.add(meshes["plane_1"]);
+
+      //__________________ ВРАЩЕНИЕ 2 ______________
+
+      meshes["plane_2"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(50, 50),
+        new THREE.MeshPhongMaterial({})
+      );
+      meshes["plane_2"].position.set(50, 50, 0);
+      scene.add(meshes["plane_2"]);
+
+      //__________________ СМЕЩЕНИЕ  ______________
+
+      meshes["offset"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(50, 50),
+        new THREE.MeshPhongMaterial({
+          map: tex["water"]
+        })
+      );
+      meshes["offset"].position.set(100, 50, 0);
+      scene.add(meshes["offset"]);
+
+      //__________________ МАСШТАБ  ______________
+
+      meshes["repeat"] = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(50, 50),
+        new THREE.MeshPhongMaterial({
+          map: tex["grass"]
+        })
+      );
+      meshes["repeat"].position.set(150, 50, 0);
+      //tex["grass"].center.x=0;
+      //tex["grass"].center.y=0;
+      tex["grass"].center.x = 0.5;
+      tex["grass"].center.y = 0.5;
+      scene.add(meshes["repeat"]);
+
+      // ________________________ РЕНДЕРИНГ  ________________________
+
+      function loop() {
+        requestAnimationFrame(loop);
+
+        var delta = clock.getDelta();
+
+        //controls.update(delta);
+
+        timer = Date.now() * 0.00007;
+
+        //__________________ ВРАЩЕНИЕ  1 ______________
+
+        tex["ring"].rotation += 0.02;
+
+        //__________________ ВРАЩЕНИЕ  2 ______________
+
+        tex["ring_2"].rotation += 0.02;
+
+        //__________________ СМЕЩЕНИЕ  ______________
+
+        tex["water"].offset.x += 0.0005;
+        tex["water"].offset.y += 0.002;
+
+        //__________________ МАСШТАБ  ______________
+
+        tex["grass"].repeat.x = Math.sin(timer * 5);
+        tex["grass"].repeat.y = Math.sin(timer * 5);
+
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>
