@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+  <head> </head>
+  <body style="margin:0px;overflow:hidden;">
+    <div id="game">
+      <div id="hud" style="display:none;">
+        <div
+          style="position:absolute;left:20px;bottom:20px;font-family:arial;font-size:30px;color:#ffff00;"
+        >
+          +<span id="health">100</span>
+        </div>
+      </div>
+      <div id="stat" style="position:absolute;"></div>
+      <div
+        id="loading"
+        style="position:absolute;display:block;top:50%;width:100%;text-align:center;font-family:arial;font-size:20px;color:#ffff00;"
+      >
+      Загружено <span id="loading_amount"></span>
+      </div>
+      <div
+        id="begin"
+        onClick="init_last();"
+        style="cursor:pointer;position:absolute;display:none;top:50%;width:100%;text-align:center;font-family:arial;font-size:20px;color:#ffff00;"
+      >
+      Старт
+      </div>
+      <canvas
+        id="canvas"
+        width="800"
+        height="600"
+        style="background:#000000;vertical-align:top;"
+      ></canvas>
+    </div>
+
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/stats.min.js"></script>
+    <script type="text/javascript" src="js/FirstPersonControls.js"></script>
+    <script type="text/javascript" src="js/MTLLoader.js"></script>
+    <script type="text/javascript" src="js/OBJLoader.js"></script>
+
+    <script type="text/javascript">
+      "use strict";
+
+      var scene, camera, renderer, controls;
+      var canvas = document.getElementById("canvas");
+      var width, height;
+      var use_fullscreen = 0; // 0 - ВЫКЛЮЧИТЬ ПОЛНЫЙ ЭКРАН, 1 - ВКЛЮЧИТЬ
+      var sens = 1.5; // ЧУВСТВИТЕЛЬНОСТЬ ПОВОРОТА В ПОЛНОЭКРАННОМ РЕЖИМЕ
+
+      if (use_fullscreen == 0) {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      } else {
+        var width = screen.width;
+        var height = screen.height;
+        canvas.width = screen.width;
+        canvas.height = screen.height;
+      }
+
+      var stop = 1; // СТОП И ЗАПУСК ФУНКЦИИ loop();
+
+      // ________________________ ПОЛНЫЙ ЭКРАН________________________
+
+      function fullscreen() {
+        var element = document.getElementById("game");
+        if (element.requestFullScreen) {
+          element.requestFullScreen();
+        } else if (element.webkitRequestFullScreen) {
+          element.webkitRequestFullScreen();
+        } else if (element.mozRequestFullScreen) {
+          element.mozRequestFullScreen();
+        }
+      }
+
+      // ________________________ УПРАВЛЕНИЕ МЫШКОЙ ________________________
+
+      function lockChangeAlert() {
+        if (
+          document.pointerLockElement === canvas ||
+          document.mozPointerLockElement === canvas
+        ) {
+          document.addEventListener("mousemove", updatePosition, false);
+        } else {
+          document.removeEventListener("mousemove", updatePosition, false);
+        }
+      }
+
+      // ________________________ ПОВОРОТ    ________________________
+
+      var fps_cam_x = 0;
+      var fps_cam_y = 0;
+
+      function updatePosition(e, move_x, move_y) {
+        if (stop == 1) {
+          return;
+        }
+        fps_cam_x += e.movementX * sens;
+        fps_cam_y += e.movementY * sens;
+        controls.mouseX = fps_cam_x;
+        controls.mouseY = fps_cam_y;
+      }
+
+      var stats = new Stats();
+      document.getElementById("stat").appendChild(stats.dom);
+
+      var meshes = [];
+      var clock = new THREE.Clock();
+
+      camera = new THREE.PerspectiveCamera(60, width / height, 1, 10000);
+      camera.position.set(50, 100, 150);
+      camera.lookAt(50, 50, 0);
+
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true,
+        transparent: true,
+        premultipliedAlpha: false
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setClearColor(0xffffff);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = 0;
+      renderer.gammaInput = true;
+      renderer.gammaOutput = true;
+
+      controls = new THREE.FirstPersonControls(camera, renderer.domElement);
+      controls.movementSpeed = 100;
+      controls.lookSpeed = 0.1;
+      controls.lookVertical = true;
+
+      scene = new THREE.Scene();
+
+      // ________________________ УКАЗАТЕЛЬ НАПРАВЛЕНИЯ ОСЕЙ ________________________
+
+      scene.add(new THREE.AxesHelper(100));
+
+      // ________________________ СВЕТ ОКРУЖЕНИЯ ________________________
+
+      var ambient = new THREE.AmbientLight(0xf5cf6b, 0.8);
+      scene.add(ambient);
+
+      // ________________________ ТУМАН  ________________________
+
+      scene.fog = new THREE.Fog(0xffffff, 200, 3000);
+
+      // ________________________ СВЕТ СОЛНЦА ________________________
+
+      var sun = new THREE.DirectionalLight(0xfffff0, 1.5);
+      sun.position.set(700, 500, 500);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 4096;
+      sun.shadow.mapSize.height = 4096;
+      sun.shadow.camera.near = 10;
+      sun.shadow.camera.far = 1700;
+      sun.shadow.camera.left = -2000;
+      sun.shadow.camera.right = 2000;
+      sun.shadow.camera.top = 1350;
+      sun.shadow.camera.bottom = -1350;
+      sun.shadow.bias = -0.01;
+      sun.shadow.radius = 1;
+      scene.add(sun);
+
+      //scene.add(new THREE.DirectionalLightHelper(sun,100));
+
+      //__________________ ЗАГРУЗЧИК  _______________
+
+      var manager_to_load = 0; //  СКОЛЬКО НАДО ЗАГРУЗИТЬ ЧЕРЕЗ МЕНДЖЕР ЗАГРУЗОК. ПОДСЧИТЫВАЕТСЯ НИЖЕ
+      var manager_loaded = 0; // ЗАГРУЖЕНО В МЕНЕДЖЕРЕ
+      var other_to_load = 0; // СКОЛЬКО НАДО ЗАГРУЗИТЬ НАПРЯМУЮ ОСТАЛЬНЫХ ФАЙЛОВ. ПОДСЧИТЫВАЕТСЯ НИЖЕ
+      var other_loaded = 0; // ЗАГРУЖЕНО НАПРЯМУЮ
+
+      var loadingManager = new THREE.LoadingManager();
+      loadingManager.onProgress = function(item, loaded, total) {
+        console.log(item, loaded, total);
+        manager_loaded = loaded;
+        if (loaded == total) {
+          console.log("ФАЙЛЫ В МЕНЕДЖЕРЕ ЗАГРУЖЕНЫ");
+        }
+      };
+
+      //__________________ ЗАПУСТИТЬ ПРОВЕРКУ ЗАГРУЗКИ ФАЙЛОВ, КОГДА САМА СТРАНИЦА ЗАГРУЗИТСЯ _______________
+
+      window.onload = function() {
+        audios = document.getElementsByTagName("audio");
+        check_loaded = setTimeout("is_loaded();", 100);
+      };
+
+      //__________________ ПРОВЕРКА ЗАГРУЗКИ ФАЙЛОВ _______________
+
+      var audios = [];
+      var check_loaded;
+
+      function is_loaded() {
+        document.getElementById("loading_amount").innerHTML =
+          manager_loaded +
+          other_loaded +
+          "/" +
+          (manager_to_load + other_to_load);
+        for (var aui = 0; aui < audios.length; aui++) {
+          if (audios[aui].readyState != 4) {
+            check_loaded = setTimeout("is_loaded();", 100);
+            return;
+          }
+        }
+
+        if (manager_to_load + other_to_load == manager_loaded + other_loaded) {
+          document.getElementById("loading").style.display = "none";
+          clearTimeout(check_loaded);
+          init_first();
+          return;
+        }
+
+        check_loaded = setTimeout("is_loaded();", 100);
+      }
+
+      //__________________ ПОСЛЕ ЗАГРУЗКИ ПЕРВАЯ ИНИЦИАЛИЗАЦИЯ  _______________
+
+      function init_first() {
+        canvas.requestPointerLock =
+          canvas.requestPointerLock || canvas.mozRequestPointerLock;
+        document.exitPointerLock =
+          document.exitPointerLock || document.mozExitPointerLock;
+        document.addEventListener("pointerlockchange", lockChangeAlert, false);
+        document.addEventListener(
+          "mozpointerlockchange",
+          lockChangeAlert,
+          false
+        );
+
+        //document.getElementById("begin").style.display="block";
+        init_last();
+      }
+
+      //__________________ ПОСЛЕДНЯЯ ИНИЦИАЛИЗАЦИЯ И ЗАПУСК ________________________
+
+      function init_last() {
+        //document.getElementById("begin").style.display="none";
+
+        if (use_fullscreen == 1) {
+          fullscreen();
+          canvas.requestPointerLock();
+        }
+
+        stop = 0;
+        loop();
+      }
+
+      //__________________ ЗВУКИ  _______________
+
+      var sound = [];
+      var sound_file = [];
+
+      var listener = new THREE.AudioListener();
+      listener.context.resume(); // ДЛЯ ОБХОДА БАГА
+      camera.add(listener);
+      var audioLoader = new THREE.AudioLoader();
+
+      //__________________ ТЕКСТУРЫ  _______________
+
+      var maxanisotropy = renderer.capabilities.getMaxAnisotropy(); // ЧЕТКОСТЬ ИЗОБРАЖЕНИЯ
+
+      var tex = [];
+      var texture_loader = new THREE.TextureLoader(loadingManager);
+
+      //ТИПЫ МАТЕРИАЛОВ ПИШЕМ В КОНЦЕ ПОСЛЕ _: c-камень, m-металл, g-земля, w-дерево, d-устройство, s-вода, a-фрукт, f-мясо, gg-стекло
+      // СТЕКЛО МОЖНО УКАЗАТЬ ЧЕРЕЗ СВОЙСТВО МАТЕРИАЛА opacity:0.5
+
+      tex["terrain"] = texture_loader.load("images/terrain.jpg");
+      tex["terrain"].anisotropy = maxanisotropy;
+      tex["terrain"].wrapS = tex["terrain"].wrapT = THREE.RepeatWrapping;
+      tex["terrain"].repeat.set(2, 2);
+
+      for (var n in tex) {
+        manager_to_load++; // ПОДСЧИТЫВАЕМ КОЛИЧЕСТВО ТЕКСТУР ДЛЯ ЗАГРУЗКИ
+      }
+
+      //__________________ НЕБО  _______________
+
+      var textureSkyCube = new THREE.CubeTextureLoader(loadingManager)
+        .setPath("images/sky/")
+        .load(["lf.jpg", "rt.jpg", "up.jpg", "dn.jpg", "ft.jpg", "bk.jpg"]);
+      scene.background = textureSkyCube;
+
+      manager_to_load += 6; // ДОБАВЛЯЕМ 6 ТЕКСТУР НЕБА
+
+      //__________________ ЛАНДШАФТ  _______________
+
+      other_to_load++;
+
+      var mtlLoader = new THREE.MTLLoader();
+      mtlLoader.load("models/terrain.mtl", function(materials) {
+        // ОТКЛЮЧАЕМ ЗАГРУЗКУ МАТЕРИАЛОВ ПО УМОЛЧАНИЮ И ДЕЛАЕМ НУЖНЫЕ НАМ СВОЙСТВА МАТЕРИАЛОВ
+
+        //materials.preload();
+
+        //  ДЛЯ ОБХОДА БАГА, КОГДА НЕ ВИДНО ОБЪЕКТОВ, В МАТЕРИАЛЕ КОТОРЫХ ЕСТЬ ТОЛЬКО ЦВЕТ И НИКАКИХ ТЕКСТУР
+        //НЕ ВИДНО, ПОТОМУ ЧТО ЗАГРУЗЧИК МАТЕРИАЛОВ СТАВИТ ИМ ПОЛНУЮ ПРОЗРАЧНОСТЬ
+
+        for (var i in materials.materialsInfo) {
+          materials.materialsInfo[i].tr = 1;
+        }
+
+        //НАЗНАЧАЕМ СВОИ МАТЕРИАЛЫ
+
+        materials.materials.terrain = new THREE.MeshLambertMaterial({
+          color: 0xffffff,
+          map: tex["terrain"]
+        });
+
+        var objLoader = new THREE.OBJLoader();
+
+        objLoader.setMaterials(materials);
+        objLoader.load("models/terrain.obj", function(object) {
+          while (object.children.length) {
+            meshes[object.children[0].name] = object.children[0];
+            scene.add(meshes[object.children[0].name]);
+          }
+
+          other_loaded++;
+
+          //scene.add(object);
+        });
+      });
+
+      // ________________________ РЕНДЕРИНГ  ________________________
+
+      function loop() {
+        if (stop == 1) {
+          return;
+        }
+
+        requestAnimationFrame(loop);
+
+        var delta = clock.getDelta();
+
+        //controls.update(delta);
+
+        meshes["Pyramid001"].rotation.y += 0.01;
+
+        renderer.render(scene, camera);
+
+        stats.update();
+      }
+    </script>
+  </body>
+</html>
