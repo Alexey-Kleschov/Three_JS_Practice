@@ -1,0 +1,72 @@
+# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
+# File Created: 25.08.2018 14:18:07
+
+newmtl map_1
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5882 0.5882 0.5882
+	Kd 0.5882 0.5882 0.5882
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\WebServers\home\editor.me\www\12_splat_blend_rgba_mask_textures\images\splat_1\splat_1_mask.png
+	map_Kd D:\WebServers\home\editor.me\www\12_splat_blend_rgba_mask_textures\images\splat_1\splat_1_mask.png
+
+newmtl stone
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5882 0.5882 0.5882
+	Kd 0.5882 0.5882 0.5882
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\WebServers\home\editor.me\www\12_splat_blend_rgba_mask_textures\images\stone.jpg
+	map_Kd D:\WebServers\home\editor.me\www\12_splat_blend_rgba_mask_textures\images\stone.jpg
+
+newmtl map_2
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5882 0.5882 0.5882
+	Kd 0.5882 0.5882 0.5882
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\WebServers\home\editor.me\www\12_splat_blend_rgba_mask_textures\images\splat_2\splat_2_mask.png
+	map_Kd D:\WebServers\home\editor.me\www\12_splat_blend_rgba_mask_textures\images\splat_2\splat_2_mask.png
+
+newmtl palm
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5882 0.5882 0.5882
+	Kd 0.5882 0.5882 0.5882
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\WebServers\home\editor.me\www\12_splat_blend_rgba_mask_textures\images\palm.png
+	map_Kd D:\WebServers\home\editor.me\www\12_splat_blend_rgba_mask_textures\images\palm.png
+
+newmtl house
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5882 0.5882 0.5882
+	Kd 0.5882 0.5882 0.5882
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\WebServers\home\editor.me\www\12_splat_blend_rgba_mask_textures\images\house.png
+	map_Kd D:\WebServers\home\editor.me\www\12_splat_blend_rgba_mask_textures\images\house.png
