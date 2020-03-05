@@ -102,8 +102,8 @@ var clock=new THREE.Clock();
 
 
 camera=new THREE.PerspectiveCamera(60,width/height,1,10000);
-camera.position.set(50,100,150);
-camera.lookAt(50,50,0);
+camera.position.set(200,150,150);
+camera.lookAt(150,100,0);
 
 
 renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true,transparent:true,premultipliedAlpha:false});
@@ -279,13 +279,14 @@ var texture_loader=new THREE.TextureLoader(loadingManager);
 // ярейкн лнфмн сйюгюрэ вепег ябниярбн люрепхюкю opacity:0.5
 
 
-tex["ground"]=texture_loader.load("images/ground.jpg");
+tex["ground"]=texture_loader.load("images/ground.png");
 tex["ground"].wrapS=tex["ground"].wrapT=THREE.RepeatWrapping;
-tex["ground"].repeat.set(3,3);
+tex["ground"].anisotropy=maxanisotropy;
 
 
-tex["teapot"]=texture_loader.load("images/teapot.jpg");
-tex["teapot"].mapping=THREE.SphericalReflectionMapping;
+tex["wall"]=texture_loader.load("images/wall.png");
+tex["wall"].wrapS=tex["wall"].wrapT=THREE.RepeatWrapping;
+tex["wall"].anisotropy=maxanisotropy;
 
 
 for(var n in tex){
@@ -310,7 +311,7 @@ other_to_load++;
 
 
 var mtlLoader=new THREE.MTLLoader();
-mtlLoader.load("models/teapot.mtl",function(materials){
+mtlLoader.load("models/repeat.mtl",function(materials){
 
 
 // нрйкчвюел гюцпсгйс люрепхюкнб он слнквюмхч х декюел мсфмше мюл ябниярбю люрепхюкнб
@@ -336,12 +337,8 @@ map:tex["ground"],
 });
 
 
-materials.materials.teapot=new THREE.MeshPhongMaterial({
-color:0x00253C,
-shininess:80,
-envMap:tex["teapot"],
-reflectivity:0.8,
-combine:THREE.MixOperation,
+materials.materials.wall=new THREE.MeshLambertMaterial({
+map:tex["wall"],
 });
 
 
@@ -349,23 +346,13 @@ var objLoader=new THREE.OBJLoader();
 
 
 objLoader.setMaterials(materials);
-objLoader.load("models/teapot.obj",function(object){
+objLoader.load("models/repeat.obj",function(object){
 
 
 while(object.children.length){
 meshes[object.children[0].name]=object.children[0];
 scene.add(meshes[object.children[0].name]);
 }
-
-
-// янгдю╗л нцпюмхвхбючысч ятепс
-meshes["teapot"].geometry.computeBoundingSphere();
-// гюонлхмюел йннпдхмюрш жемрпю ятепш
-var mem_bb=[meshes["teapot"].geometry.boundingSphere.center.x,meshes["teapot"].geometry.boundingSphere.center.y,meshes["teapot"].geometry.boundingSphere.center.z];
-// оепемняхл йннпдхмюрш бепьхм назейрю б мювюкн йннпдхмюр
-meshes["teapot"].geometry.center();
-// оепелеыюел назейр мю ябн╗ леярн
-meshes["teapot"].position.set(mem_bb[0],mem_bb[1],mem_bb[2]);
 
 
 other_loaded++;
@@ -396,9 +383,6 @@ var delta=clock.getDelta();
 
 
 //controls.update(delta);
-
-
-meshes["teapot"].rotation.y+=0.01;
 
 
 renderer.render(scene,camera);
