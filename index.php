@@ -66,7 +66,7 @@ var clock=new THREE.Clock();
 
 
 camera=new THREE.PerspectiveCamera(60,width/height,1,10000);
-camera.position.set(200,100,150);
+camera.position.set(0,150,200);
 //camera.lookAt(0,0,0);
 
 
@@ -81,10 +81,10 @@ renderer.gammaOutput=true;
 
 
 controls=new THREE.FirstPersonControls(camera,renderer.domElement);
-controls.movementSpeed=100;
+controls.movementSpeed=200;
 controls.lookSpeed=0.1;
 controls.lookVertical=true;
-controls.lon=-2.0*180/Math.PI;
+controls.lon=-1.5*180/Math.PI;
 
 
 scene=new THREE.Scene();
@@ -104,18 +104,17 @@ var texture_loader=new THREE.TextureLoader(loadingManager);
 // —“≈ ÀŒ ÃŒ∆ÕŒ ” ¿«¿“‹ ◊≈–≈« —¬Œ…—“¬Œ Ã¿“≈–»¿À¿ opacity:0.5
 
 
-tex["wall"]=texture_loader.load("images/wall.jpg");
-tex["mold"]=texture_loader.load("images/mold.png");
-tex["impact"]=texture_loader.load("images/impact.png");
-tex["picture"]=texture_loader.load("images/picture.png");
+tex["river"]=texture_loader.load("images/river.jpg");
+tex["river"].wrapS=tex["river"].wrapT=THREE.RepeatWrapping;
+tex["lava"]=texture_loader.load("images/lava.png");
+tex["lava"].wrapS=tex["lava"].wrapT=THREE.RepeatWrapping;
+tex["road"]=texture_loader.load("images/road.jpg");
+tex["road"].wrapS=tex["road"].wrapT=THREE.RepeatWrapping;
 tex["grass"]=texture_loader.load("images/grass.jpg");
-tex["grass"].anisotropy=maxanisotropy;
-tex["leaves"]=texture_loader.load("images/leaves.png");
-tex["chamomile"]=texture_loader.load("images/chamomile.png");
-tex["floor"]=texture_loader.load("images/floor.jpg");
-tex["floor"].wrapS=tex["floor"].wrapT=THREE.RepeatWrapping;
-tex["blood"]=texture_loader.load("images/blood.png");
-tex["blood_n"]=texture_loader.load("images/blood_n.png");
+tex["grass_2"]=texture_loader.load("images/grass_2.jpg");
+tex["grass_2"].wrapS=tex["grass_2"].wrapT=THREE.RepeatWrapping;
+tex["concrete"]=texture_loader.load("images/concrete.jpg");
+tex["concrete"].wrapS=tex["concrete"].wrapT=THREE.RepeatWrapping;
 
 
 for(var n in tex){
@@ -140,7 +139,7 @@ other_to_load++;
 
 
 var mtlLoader=new THREE.MTLLoader();
-mtlLoader.load("models/decals.mtl",function(materials){
+mtlLoader.load("models/river_lava_road.mtl",function(materials){
 
 
 // Œ“ Àﬁ◊¿≈Ã «¿√–”« ” Ã¿“≈–»¿ÀŒ¬ œŒ ”ÃŒÀ◊¿Õ»ﬁ » ƒ≈À¿≈Ã Õ”∆Õ€≈ Õ¿Ã —¬Œ…—“¬¿ Ã¿“≈–»¿ÀŒ¬
@@ -161,25 +160,18 @@ materials.materialsInfo[i].tr=1;
 // Õ¿«Õ¿◊¿≈Ã —¬Œ» Ã¿“≈–»¿À€
 
 
-materials.materials.wall=new THREE.MeshLambertMaterial({
-map:tex["wall"],
+materials.materials.river=new THREE.MeshLambertMaterial({
+map:tex["river"],
 });
 
 
-materials.materials.mold=new THREE.MeshLambertMaterial({
-map:tex["mold"],
-transparent:true
+materials.materials.lava=new THREE.MeshLambertMaterial({
+map:tex["lava"],
 });
 
 
-materials.materials.impact=new THREE.MeshLambertMaterial({
-map:tex["impact"],
-transparent:true
-});
-
-
-materials.materials.picture=new THREE.MeshLambertMaterial({
-map:tex["picture"],
+materials.materials.road=new THREE.MeshLambertMaterial({
+map:tex["road"],
 });
 
 
@@ -188,29 +180,13 @@ map:tex["grass"],
 });
 
 
-materials.materials.leaves=new THREE.MeshLambertMaterial({
-map:tex["leaves"],
-transparent:true
+materials.materials.grass_2=new THREE.MeshLambertMaterial({
+map:tex["grass_2"],
 });
 
 
-materials.materials.chamomile=new THREE.MeshLambertMaterial({
-map:tex["chamomile"],
-transparent:true
-});
-
-
-materials.materials.floor=new THREE.MeshLambertMaterial({
-map:tex["floor"],
-});
-
-
-materials.materials.blood=new THREE.MeshPhongMaterial({
-map:tex["blood"],
-normalMap:tex["blood_n"],
-normalScale:{x:1,y:1},
-shininess:80,
-transparent:true
+materials.materials.concrete=new THREE.MeshLambertMaterial({
+map:tex["concrete"],
 });
 
 
@@ -221,7 +197,7 @@ var objLoader=new THREE.OBJLoader();
 
 
 objLoader.setMaterials(materials);
-objLoader.load("models/decals.obj",function(object){
+objLoader.load("models/river_lava_road.obj",function(object){
 
 
 while(object.children.length){
@@ -258,6 +234,13 @@ var delta=clock.getDelta();
 
 
 controls.update(delta);
+
+
+// œ≈–≈Ã≈Ÿ¿≈Ã ¬Œƒ”
+
+
+tex["river"].offset.y+=0.002;
+tex["lava"].offset.y+=0.002;
 
 
 renderer.render(scene,camera);

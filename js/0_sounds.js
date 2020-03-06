@@ -5,7 +5,7 @@ var sound=[];
 var sound_file=[];
 
 
-var listener=new THREE.AudioListener();
-listener.context.resume(); // дкъ наундю аюцю
+//var listener=new THREE.AudioListener();
+//listener.context.resume(); // дкъ наундю аюцю
 
-var audioLoader=new THREE.AudioLoader();
+//var audioLoader=new THREE.AudioLoader();
