@@ -1,0 +1,16 @@
+# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
+# File Created: 31.08.2018 22:03:52
+
+newmtl spider
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5880 0.5880 0.5880
+	Kd 0.5880 0.5880 0.5880
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\WebServers\home\editor.me\www\17_dissolve_vanish_effect\images\spider.png
+	map_Kd D:\WebServers\home\editor.me\www\17_dissolve_vanish_effect\images\spider.png

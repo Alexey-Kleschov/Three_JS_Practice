@@ -37,12 +37,20 @@ scene.add(sun);
 //scene.add(new THREE.DirectionalLightHelper(sun,100));
 
 
-var pointLight=new THREE.PointLight(0xffff00,4,200);
+var pointLight=new THREE.PointLight(0xffff00,2,400);
 
-pointLight.position.set(0,70,0);
+pointLight.position.set(200,100,200);
 scene.add(pointLight);
 var pointLightH=new THREE.PointLightHelper(pointLight,10);
 scene.add(pointLightH);
 
+
+var pointLight_2=new THREE.PointLight(0x00a000,2,400);
+
+
+pointLight_2.position.set(-380,180,-380);
+scene.add(pointLight_2);
+var pointLightH_2=new THREE.PointLightHelper(pointLight_2,10);
+scene.add(pointLightH_2);
 
 }
