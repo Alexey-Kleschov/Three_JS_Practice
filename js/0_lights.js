@@ -42,7 +42,7 @@ var pointLight=new THREE.PointLight(0xffff00,4,200);
 pointLight.position.set(250,70,200);
 scene.add(pointLight);
 var pointLightH=new THREE.PointLightHelper(pointLight,10);
-scene.add(pointLightH);
+//scene.add(pointLightH);
 
 
 }
