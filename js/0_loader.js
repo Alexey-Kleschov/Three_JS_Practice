@@ -60,7 +60,7 @@ document.exitPointerLock=document.exitPointerLock || document.mozExitPointerLock
 document.addEventListener("pointerlockchange",lockChangeAlert,false);
 document.addEventListener("mozpointerlockchange",lockChangeAlert,false);
 
-scene.add(new THREE.AxesHelper(100));
+//scene.add(new THREE.AxesHelper(100));
 //document.getElementById("begin").style.display="block";
 init_lights();
 camera.add(listener);

@@ -66,7 +66,7 @@ var clock=new THREE.Clock();
 
 
 camera=new THREE.PerspectiveCamera(60,width/height,1,10000);
-camera.position.set(0,150,400);
+camera.position.set(200,100,150);
 //camera.lookAt(0,0,0);
 
 
@@ -84,7 +84,7 @@ controls=new THREE.FirstPersonControls(camera,renderer.domElement);
 controls.movementSpeed=100;
 controls.lookSpeed=0.1;
 controls.lookVertical=true;
-controls.lon=-1.5*180/Math.PI;
+controls.lon=-2.0*180/Math.PI;
 
 
 scene=new THREE.Scene();
@@ -104,10 +104,18 @@ var texture_loader=new THREE.TextureLoader(loadingManager);
 // —“≈ ÀŒ ÃŒ∆ÕŒ ” ¿«¿“‹ ◊≈–≈« —¬Œ…—“¬Œ Ã¿“≈–»¿À¿ opacity:0.5
 
 
-tex["wall"]=texture_loader.load("images/wall.png");
-tex["wall"].wrapS=tex["wall"].wrapT=THREE.RepeatWrapping;
-
+tex["wall"]=texture_loader.load("images/wall.jpg");
+tex["mold"]=texture_loader.load("images/mold.png");
+tex["impact"]=texture_loader.load("images/impact.png");
 tex["picture"]=texture_loader.load("images/picture.png");
+tex["grass"]=texture_loader.load("images/grass.jpg");
+tex["grass"].anisotropy=maxanisotropy;
+tex["leaves"]=texture_loader.load("images/leaves.png");
+tex["chamomile"]=texture_loader.load("images/chamomile.png");
+tex["floor"]=texture_loader.load("images/floor.jpg");
+tex["floor"].wrapS=tex["floor"].wrapT=THREE.RepeatWrapping;
+tex["blood"]=texture_loader.load("images/blood.png");
+tex["blood_n"]=texture_loader.load("images/blood_n.png");
 
 
 for(var n in tex){
@@ -132,7 +140,7 @@ other_to_load++;
 
 
 var mtlLoader=new THREE.MTLLoader();
-mtlLoader.load("models/several_materials.mtl",function(materials){
+mtlLoader.load("models/decals.mtl",function(materials){
 
 
 // Œ“ Àﬁ◊¿≈Ã «¿√–”« ” Ã¿“≈–»¿ÀŒ¬ œŒ ”ÃŒÀ◊¿Õ»ﬁ » ƒ≈À¿≈Ã Õ”∆Õ€≈ Õ¿Ã —¬Œ…—“¬¿ Ã¿“≈–»¿ÀŒ¬
@@ -158,8 +166,51 @@ map:tex["wall"],
 });
 
 
+materials.materials.mold=new THREE.MeshLambertMaterial({
+map:tex["mold"],
+transparent:true
+});
+
+
+materials.materials.impact=new THREE.MeshLambertMaterial({
+map:tex["impact"],
+transparent:true
+});
+
+
 materials.materials.picture=new THREE.MeshLambertMaterial({
 map:tex["picture"],
+});
+
+
+materials.materials.grass=new THREE.MeshLambertMaterial({
+map:tex["grass"],
+});
+
+
+materials.materials.leaves=new THREE.MeshLambertMaterial({
+map:tex["leaves"],
+transparent:true
+});
+
+
+materials.materials.chamomile=new THREE.MeshLambertMaterial({
+map:tex["chamomile"],
+transparent:true
+});
+
+
+materials.materials.floor=new THREE.MeshLambertMaterial({
+map:tex["floor"],
+});
+
+
+materials.materials.blood=new THREE.MeshPhongMaterial({
+map:tex["blood"],
+normalMap:tex["blood_n"],
+normalScale:{x:1,y:1},
+shininess:80,
+transparent:true
 });
 
 
@@ -170,7 +221,7 @@ var objLoader=new THREE.OBJLoader();
 
 
 objLoader.setMaterials(materials);
-objLoader.load("models/several_materials.obj",function(object){
+objLoader.load("models/decals.obj",function(object){
 
 
 while(object.children.length){
