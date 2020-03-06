@@ -40,10 +40,10 @@ var splat_name=[]; // мюярпнийх люрепхюкнб
 // дкъ оепбнцн люрепхюкю
 splat_name[1]={
 // охьел 4 пюгю йюйни люрепхюк асдел хяонкэгнбюрэ: basic,lambert,phong,standard,physical
-mat:"standard",
-lib:THREE.ShaderLib["standard"].uniforms,
-vs:THREE.ShaderLib.standard.vertexShader,
-fs:THREE.ShaderLib.standard.fragmentShader,
+mat:"lambert",
+lib:THREE.ShaderLib["lambert"].uniforms,
+vs:THREE.ShaderLib.lambert.vertexShader,
+fs:THREE.ShaderLib.lambert.fragmentShader,
 fog:true, // бкхъмхе рслюмю true бйкчвхрэ хкх false бшйкчвхрэ
 bump:0, // хяонкэгнбюрэ кх йюпрс пекэетю bumpMap. 0 - мер. 1 - дю, ндмю рейярспю. 4 - дю, 4 рейярспш
 normal:4, // хяонкэгнбюрэ кх йюпрс мнплюкх normalMap. 0 - мер. 1 - дю, ндмю рейярспю. 4 - дю, 4 рейярспш
@@ -60,7 +60,7 @@ vs:THREE.ShaderLib.lambert.vertexShader,
 fs:THREE.ShaderLib.lambert.fragmentShader,
 fog:true, // бкхъмхе рслюмю true бйкчвхрэ хкх false бшйкчвхрэ
 bump:0, // хяонкэгнбюрэ кх йюпрс пекэетю bumpMap. 0 - мер. 1 - дю, ндмю рейярспю. 4 - дю, 4 рейярспш
-normal:0, // хяонкэгнбюрэ кх йюпрс мнплюкх normalMap. 0 - мер. 1 - дю, ндмю рейярспю. 4 - дю, 4 рейярспш
+normal:4, // хяонкэгнбюрэ кх йюпрс мнплюкх normalMap. 0 - мер. 1 - дю, ндмю рейярспю. 4 - дю, 4 рейярспш
 u:{} // оюпюлерпш UNIFORMS. гюонкмърэ ме мюдн
 }
 
@@ -77,9 +77,9 @@ var splat_r_tex=[
 var splat_r_diffuse=[
 "vec4 mask_map=texture2D(mask_tex,vUv);",
 "vec4 valpha_tex=texture2D(alpha_tex,vUv*alpha_repeat);",
-"vec4 vred_tex=texture2D(red_tex,(vUv*red_repeat+red_offset));",
+"vec4 vred_tex=texture2D(red_tex,(vUv*red_repeat));",
 "vec4 vgreen_tex=texture2D(green_tex,vUv*green_repeat);",
-"vec4 vblue_tex=texture2D(blue_tex,vUv*blue_repeat);",
+"vec4 vblue_tex=texture2D(blue_tex,vUv*blue_repeat+red_offset);",
 "vec4 texelColor=(vred_tex*mask_map.r*mask_map.a+vgreen_tex*mask_map.g*mask_map.a+vblue_tex*mask_map.b*mask_map.a+(valpha_tex*(1.0-mask_map.a)));",
 "vec4 diffuseColor=mapTexelToLinear(texelColor);",
 ].join("\n");
@@ -195,9 +195,9 @@ var splat_r_normal_4=[
 
 "vec4 mask_map=texture2D(mask_tex,vUv);",
 "vec4 vn_alpha_tex=texture2D(n_alpha_tex,vUv*n_alpha_repeat);",
-"vec4 vn_red_tex=texture2D(n_red_tex,(vUv*n_red_repeat+red_offset));",
+"vec4 vn_red_tex=texture2D(n_red_tex,(vUv*n_red_repeat));",
 "vec4 vn_green_tex=texture2D(n_green_tex,vUv*n_green_repeat);",
-"vec4 vn_blue_tex=texture2D(n_blue_tex,vUv*n_blue_repeat);",
+"vec4 vn_blue_tex=texture2D(n_blue_tex,vUv*n_blue_repeat+red_offset);",
 "vec4 full_normal=(vn_red_tex*mask_map.r*mask_map.a+vn_green_tex*mask_map.g*mask_map.a+vn_blue_tex*mask_map.b*mask_map.a+(vn_alpha_tex*(1.0-mask_map.a)));",
 
 "vec3 mapN=full_normal.xyz*2.0-1.0;",
@@ -305,8 +305,8 @@ var clock=new THREE.Clock();
 
 
 camera=new THREE.PerspectiveCamera(60,width/height,1,10000);
-camera.position.set(200,150,150);
-camera.lookAt(150,100,0);
+camera.position.set(-100,300,500);
+//camera.lookAt(0,0,0);
 
 
 renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true,transparent:true,premultipliedAlpha:false});
@@ -323,6 +323,7 @@ controls=new THREE.FirstPersonControls(camera,renderer.domElement);
 controls.movementSpeed=100;
 controls.lookSpeed=0.1;
 controls.lookVertical=true;
+controls.lon=-1*180/Math.PI;
 
 
 scene=new THREE.Scene();
@@ -340,11 +341,6 @@ var texture_loader=new THREE.TextureLoader(loadingManager);
 
 // рхош люрепхюкнб охьел б йнмже оняке _: c-ЙЮЛЕМЭ, m-ЛЕРЮКК, g-ГЕЛКЪ, w-ДЕПЕБН, d-СЯРПНИЯРБН, s-БНДЮ, a-ТПСЙР, f-ЛЪЯН, gg-ЯРЕЙКН
 // ярейкн лнфмн сйюгюрэ вепег ябниярбн люрепхюкю opacity:0.5
-
-
-tex["house"]=texture_loader.load("images/house.png");
-tex["stone"]=texture_loader.load("images/stone.jpg");
-tex["palm"]=texture_loader.load("images/palm.png");
 
 
 // SPLAT 1
@@ -384,8 +380,8 @@ tex["splat_1_blue_n"].wrapS=tex["splat_1_blue_n"].wrapT=THREE.RepeatWrapping;
 
 
 tex["splat_2_mask"]=texture_loader.load("images/splat_2/splat_2_mask.png");
-tex["splat_2_alpha"]=texture_loader.load("images/splat_2/splat_2_alpha.png");
-tex["splat_2_red"]=texture_loader.load("images/splat_2/splat_2_red.jpg");
+tex["splat_2_alpha"]=texture_loader.load("images/splat_2/splat_2_alpha.jpg");
+tex["splat_2_red"]=texture_loader.load("images/splat_2/splat_2_red.png");
 tex["splat_2_green"]=texture_loader.load("images/splat_2/splat_2_green.jpg");
 tex["splat_2_blue"]=texture_loader.load("images/splat_2/splat_2_blue.png");
 
@@ -396,14 +392,14 @@ tex["splat_2_green"].wrapS=tex["splat_2_green"].wrapT=THREE.RepeatWrapping;
 tex["splat_2_blue"].wrapS=tex["splat_2_blue"].wrapT=THREE.RepeatWrapping;
 
 
-tex["splat_2_one_n"]=texture_loader.load("images/splat_2/splat_2_one_n.jpg");
+tex["splat_2_one_n"]=texture_loader.load("images/splat_2/splat_2_one_n.png");
 tex["splat_2_one_n"].wrapS=tex["splat_2_one_n"].wrapT=THREE.RepeatWrapping;
 
 
 tex["splat_2_alpha_n"]=texture_loader.load("images/splat_2/splat_2_alpha_n.jpg");
-tex["splat_2_red_n"]=texture_loader.load("images/splat_2/splat_2_red_n.jpg");
+tex["splat_2_red_n"]=texture_loader.load("images/splat_2/splat_2_red_n.png");
 tex["splat_2_green_n"]=texture_loader.load("images/splat_2/splat_2_green_n.jpg");
-tex["splat_2_blue_n"]=texture_loader.load("images/splat_2/splat_2_blue_n.jpg");
+tex["splat_2_blue_n"]=texture_loader.load("images/splat_2/splat_2_blue_n.png");
 
 
 tex["splat_2_alpha_n"].wrapS=tex["splat_2_alpha_n"].wrapT=THREE.RepeatWrapping;
@@ -434,7 +430,7 @@ other_to_load++;
 
 
 var mtlLoader=new THREE.MTLLoader();
-mtlLoader.load("models/splat.mtl",function(materials){
+mtlLoader.load("models/splat_2.mtl",function(materials){
 
 
 // нрйкчвюел гюцпсгйс люрепхюкнб он слнквюмхч х декюел мсфмше мюл ябниярбю люрепхюкнб
@@ -453,23 +449,6 @@ materials.materialsInfo[i].tr=1;
 
 
 // мюгмювюел ябнх люрепхюкш
-
-
-
-materials.materials.house=new THREE.MeshPhongMaterial({
-map:tex["house"]
-});
-
-
-materials.materials.stone=new THREE.MeshPhongMaterial({
-map:tex["stone"]
-});
-
-
-materials.materials.palm=new THREE.MeshLambertMaterial({
-map:tex["palm"],
-side:THREE.DoubleSide,
-});
 
 
 //__________________ SPLAT 1 _______________
@@ -497,14 +476,14 @@ n_red_tex:{type:"t",value:null}, // мнплюкэ дкъ йпюямнцн жберю
 n_green_tex:{type:"t",value:null}, // мнплюкэ дкъ гекемнцн жберю
 n_blue_tex:{type:"t",value:null}, // мнплюкэ дкъ яхмецн жберю
 // онбрнпш рейярсп
-alpha_repeat:{type:"v2",value:{x:4,y:4}},
+alpha_repeat:{type:"v2",value:{x:10,y:10}},
 red_repeat:{type:"v2",value:{x:4,y:4}},
-green_repeat:{type:"v2",value:{x:1,y:1}},
+green_repeat:{type:"v2",value:{x:4,y:4}},
 blue_repeat:{type:"v2",value:{x:4,y:4}},
 b_one_repeat:{type:"v2",value:{x:1,y:1}}, // дкъ ндмнцн пекэетю bumpMap
 b_alpha_repeat:{type:"v2",value:{x:4,y:4}},
 b_red_repeat:{type:"v2",value:{x:4,y:4}},
-b_green_repeat:{type:"v2",value:{x:10,y:10}},
+b_green_repeat:{type:"v2",value:{x:4,y:4}},
 b_blue_repeat:{type:"v2",value:{x:4,y:4}},
 n_one_repeat:{type:"v2",value:{x:1,y:1}}, // дкъ ндмни мнплюкх normalMap
 n_alpha_repeat:{type:"v2",value:{x:4,y:4}},
@@ -549,10 +528,10 @@ splat_d.u.green_tex.value=tex["splat_1_green"]; // рейярспю дкъ гекемнцн жберю
 splat_d.u.blue_tex.value=tex["splat_1_blue"]; // рейярспю дкъ яхмецн жберю
 
 
-splat_d.u.b_alpha_tex.value=tex["splat_1_alpha"]; // рейярспю пекэетю дкъ опнгпювмшу леяр
-splat_d.u.b_red_tex.value=tex["splat_1_red"]; // рейярспю пекэетю дкъ йпюямнцн жберю
+splat_d.u.b_alpha_tex.value=tex["splat_1_alpha_n"]; // рейярспю пекэетю дкъ опнгпювмшу леяр
+splat_d.u.b_red_tex.value=tex["splat_1_red_n"]; // рейярспю пекэетю дкъ йпюямнцн жберю
 splat_d.u.b_green_tex.value=tex["splat_1_green_n"]; // рейярспю пекэетю дкъ гекемнцн жберю
-splat_d.u.b_blue_tex.value=tex["splat_1_blue"]; // рейярспю пекэетю дкъ яхмецн жберю
+splat_d.u.b_blue_tex.value=tex["splat_1_blue_n"]; // рейярспю пекэетю дкъ яхмецн жберю
 
 
 splat_d.u.n_alpha_tex.value=tex["splat_1_alpha_n"]; // рейярспю мнплюкх дкъ опнгпювмшу леяр
@@ -564,7 +543,7 @@ splat_d.u.n_blue_tex.value=tex["splat_1_blue_n"]; // рейярспю мнплюкх дкъ яхмецн
 splat_mat[splat_i].uniforms=splat_d.u; // опхябюхбюел гмювемхъ UNIFORMS
 
 
-materials.materials.map_1=new THREE.ShaderMaterial(splat_mat[splat_i]);
+materials.materials.ground_1=new THREE.ShaderMaterial(splat_mat[splat_i]);
 
 
 //__________________ SPLAT 2 _______________
@@ -592,18 +571,18 @@ n_green_tex:{type:"t",value:null}, // мнплюкэ дкъ гекемнцн жберю
 n_blue_tex:{type:"t",value:null}, // мнплюкэ дкъ яхмецн жберю
 // онбрнпш рейярсп
 alpha_repeat:{type:"v2",value:{x:4,y:4}},
-red_repeat:{type:"v2",value:{x:10,y:10}},
-green_repeat:{type:"v2",value:{x:1,y:1}},
-blue_repeat:{type:"v2",value:{x:10,y:10}},
+red_repeat:{type:"v2",value:{x:4,y:4}},
+green_repeat:{type:"v2",value:{x:4,y:4}},
+blue_repeat:{type:"v2",value:{x:4,y:4}},
 b_one_repeat:{type:"v2",value:{x:1,y:1}}, // дкъ ндмнцн пекэетю bumpMap
 b_alpha_repeat:{type:"v2",value:{x:4,y:4}},
-b_red_repeat:{type:"v2",value:{x:10,y:10}},
+b_red_repeat:{type:"v2",value:{x:4,y:4}},
 b_green_repeat:{type:"v2",value:{x:4,y:4}},
 b_blue_repeat:{type:"v2",value:{x:4,y:4}},
 n_one_repeat:{type:"v2",value:{x:1,y:1}}, // дкъ ндмни мнплюкх normalMap
 n_alpha_repeat:{type:"v2",value:{x:4,y:4}},
-n_red_repeat:{type:"v2",value:{x:10,y:10}},
-n_green_repeat:{type:"v2",value:{x:10,y:10}},
+n_red_repeat:{type:"v2",value:{x:4,y:4}},
+n_green_repeat:{type:"v2",value:{x:4,y:4}},
 n_blue_repeat:{type:"v2",value:{x:4,y:4}},
 // ялеыемхе дкъ йпюямни люяйх
 red_offset:{type:"vec2",value:{x:0,y:0}},
@@ -643,7 +622,7 @@ splat_d.u.blue_tex.value=tex["splat_2_blue"]; // рейярспю дкъ яхмецн жберю
 
 
 splat_d.u.b_alpha_tex.value=tex["splat_2_alpha_n"]; // рейярспю пекэетю дкъ опнгпювмшу леяр
-splat_d.u.b_red_tex.value=tex["splat_2_red"]; // рейярспю пекэетю дкъ йпюямнцн жберю
+splat_d.u.b_red_tex.value=tex["splat_2_red_n"]; // рейярспю пекэетю дкъ йпюямнцн жберю
 splat_d.u.b_green_tex.value=tex["splat_2_green_n"]; // рейярспю пекэетю дкъ гекемнцн жберю
 splat_d.u.b_blue_tex.value=tex["splat_2_blue_n"]; // рейярспю пекэетю дкъ яхмецн жберю
 
@@ -657,7 +636,7 @@ splat_d.u.n_blue_tex.value=tex["splat_2_blue_n"]; // рейярспю мнплюкх дкъ яхмецн
 splat_mat[splat_i].uniforms=splat_d.u; // опхябюхбюел гмювемхъ UNIFORMS
 
 
-materials.materials.map_2=new THREE.ShaderMaterial(splat_mat[splat_i]);
+materials.materials.ground_2=new THREE.ShaderMaterial(splat_mat[splat_i]);
 
 
 //__________________ гюцпсфюел тюик OBJ _______________
@@ -667,20 +646,13 @@ var objLoader=new THREE.OBJLoader();
 
 
 objLoader.setMaterials(materials);
-objLoader.load("models/splat.obj",function(object){
+objLoader.load("models/splat_2.obj",function(object){
 
 
 while(object.children.length){
 meshes[object.children[0].name]=object.children[0];
 scene.add(meshes[object.children[0].name]);
 }
-
-
-meshes["land_1"].receiveShadow=true;
-meshes["land_2"].receiveShadow=true;
-meshes["house"].castShadow=true;
-meshes["stone"].castShadow=true;
-meshes["palm"].castShadow=true;
 
 
 other_loaded++;
@@ -716,8 +688,8 @@ controls.update(delta);
 // оепелеыюел бндс
 
 
-splat_name[2].u.red_offset.value.x-=0.002;
-if(splat_name[2].u.red_offset.value.x<-1){ splat_name[2].u.red_offset.value.x=0; }
+splat_name[1].u.red_offset.value.x-=0.001;
+if(splat_name[1].u.red_offset.value.x<-1){ splat_name[1].u.red_offset.value.x=0; }
 
 
 renderer.render(scene,camera);

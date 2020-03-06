@@ -11,7 +11,7 @@ scene.add(ambient);
 // ________________________ рслюм ________________________
 
 
-scene.fog=new THREE.Fog(0x94C3D2,600,900);
+scene.fog=new THREE.Fog(0x94C3D2,800,1200);
 
 
 // ________________________ ябер янкмжю ________________________
@@ -39,7 +39,7 @@ scene.add(sun);
 
 var pointLight=new THREE.PointLight(0xffff00,4,200);
 
-pointLight.position.set(250,-20,150);
+pointLight.position.set(250,70,200);
 scene.add(pointLight);
 var pointLightH=new THREE.PointLightHelper(pointLight,10);
 scene.add(pointLightH);
